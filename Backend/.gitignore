@@ -1,0 +1,8 @@
+.env
+node_modules/
+uploads/profiles/*
+uploads/medicines/*
+!uploads/profiles/.gitkeep
+!uploads/medicines/.gitkeep
+dist/
+*.log
