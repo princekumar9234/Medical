@@ -9,15 +9,20 @@ import {
   Calendar, 
   Stethoscope, 
   CheckCircle,
-  SlidersHorizontal
+  SlidersHorizontal,
 } from 'lucide-react';
 import { doctorService } from '../services/doctor.service';
+import { useAuth } from '../../auth/Auth.context';
 import Button from '../../../components/ui/Button';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
 export const DoctorSearchPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const userRole = (user?.role || '').toLowerCase();
+  const isDoctor = userRole === 'doctor';
 
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,116 +45,45 @@ export const DoctorSearchPage = () => {
     'ENT',
   ];
 
-  // Fallback verified doctors if backend DB doesn't have seed data yet
-  const fallbackDoctors = [
-    {
-      _id: 'doc-1',
-      name: 'Dr. Sarah Smith',
-      specialization: 'Cardiology',
-      hospitalAffiliation: 'Metro Heart Institute, New York',
-      consultationFee: 75,
-      experienceYears: 12,
-      averageRating: 4.9,
-      totalReviews: 142,
-      about: 'Board-certified Cardiologist specializing in preventive cardiology, hypertension management, and echocardiography.',
-      profileImage: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300',
-    },
-    {
-      _id: 'doc-2',
-      name: 'Dr. Marcus Vance',
-      specialization: 'General Medicine',
-      hospitalAffiliation: 'City Health Clinic, Boston',
-      consultationFee: 50,
-      experienceYears: 9,
-      averageRating: 4.8,
-      totalReviews: 98,
-      about: 'Dedicated physician focused on family wellness, chronic lifestyle condition control, and preventive diagnostics.',
-      profileImage: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300',
-    },
-    {
-      _id: 'doc-3',
-      name: 'Dr. Emily Chen',
-      specialization: 'Dermatology',
-      hospitalAffiliation: 'Apex Laser & Skin Clinic, Chicago',
-      consultationFee: 85,
-      experienceYears: 11,
-      averageRating: 4.95,
-      totalReviews: 210,
-      about: 'Specialist in clinical dermatology, acne scarring treatments, eczema management, and non-invasive cosmetic procedures.',
-      profileImage: 'https://images.unsplash.com/photo-1594824813637-67c4e51145b2?auto=format&fit=crop&q=80&w=300',
-    },
-    {
-      _id: 'doc-4',
-      name: 'Dr. Robert Jenkins',
-      specialization: 'Pediatrics',
-      hospitalAffiliation: 'Children’s Health Hospital, Los Angeles',
-      consultationFee: 65,
-      experienceYears: 15,
-      averageRating: 4.9,
-      totalReviews: 175,
-      about: 'Experienced pediatrician passionate about infant nutrition, childhood developmental milestones, and preventive care.',
-      profileImage: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300',
-    },
-    {
-      _id: 'doc-5',
-      name: 'Dr. David Kim',
-      specialization: 'Orthopedics',
-      hospitalAffiliation: 'Advanced Joint & Spine Hospital, Seattle',
-      consultationFee: 90,
-      experienceYears: 14,
-      averageRating: 4.85,
-      totalReviews: 114,
-      about: 'Orthopedic specialist in joint preservation, sports injury recovery, and arthroscopic knee and shoulder procedures.',
-      profileImage: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?auto=format&fit=crop&q=80&w=300',
-    },
-    {
-      _id: 'doc-6',
-      name: 'Dr. Priya Sharma',
-      specialization: 'Neurology',
-      hospitalAffiliation: 'NeuroCare Institute, San Francisco',
-      consultationFee: 95,
-      experienceYears: 10,
-      averageRating: 4.9,
-      totalReviews: 87,
-      about: 'Neurologist with focus on migraine management, peripheral nerve conditions, and sleep-related neurological disorders.',
-      profileImage: 'https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=300',
-    }
-  ];
-
   const fetchDoctors = async () => {
     setLoading(true);
     try {
       const params = {};
-      if (query) params.q = query;
+      if (query) params.name = query;
       if (specialty && specialty !== 'All Specialties') params.specialization = specialty;
       if (maxFee) params.maxFee = maxFee;
-      if (sortBy) params.sort = sortBy;
 
       const res = await doctorService.searchDoctors(params);
-      const apiDoctors = res.data?.data?.doctors || [];
+      const apiDoctors = res.data?.data?.results || res.data?.data?.doctors || [];
 
-      if (apiDoctors.length > 0) {
-        setDoctors(apiDoctors);
-      } else {
-        // Filter fallback doctors locally if no DB entries yet
-        let filtered = [...fallbackDoctors];
-        if (specialty && specialty !== 'All Specialties') {
-          filtered = filtered.filter(d => d.specialization.toLowerCase() === specialty.toLowerCase());
-        }
-        if (query) {
-          filtered = filtered.filter(d => 
-            d.name.toLowerCase().includes(query.toLowerCase()) || 
-            d.specialization.toLowerCase().includes(query.toLowerCase())
-          );
-        }
-        if (maxFee) {
-          filtered = filtered.filter(d => d.consultationFee <= Number(maxFee));
-        }
-        setDoctors(filtered);
+      const mapped = apiDoctors.map((d) => ({
+        _id: d.doctorId || d._id || d.id,
+        id: d.doctorId || d._id || d.id,
+        name: d.fullName || d.name || 'Doctor',
+        fullName: d.fullName || d.name || 'Doctor',
+        specialization: d.specialization || 'Healthcare Practitioner',
+        hospitalAffiliation: d.hospital || d.city || 'CareConnect Partner Network',
+        consultationFee: d.consultationFee ?? 50,
+        experienceYears: d.yearsOfExperience ?? d.experienceYears ?? 0,
+        averageRating: d.averageRating || 4.9,
+        totalReviews: d.totalReviews || 0,
+        about: d.about || `${d.specialization || 'General'} specialist providing comprehensive medical consultations.`,
+        profileImage: d.profilePhoto || d.profileImage || null,
+      }));
+
+      // In-memory sort if requested
+      if (sortBy === 'fee-low') {
+        mapped.sort((a, b) => a.consultationFee - b.consultationFee);
+      } else if (sortBy === 'fee-high') {
+        mapped.sort((a, b) => b.consultationFee - a.consultationFee);
+      } else if (sortBy === 'experience') {
+        mapped.sort((a, b) => b.experienceYears - a.experienceYears);
       }
+
+      setDoctors(mapped);
     } catch (err) {
-      console.warn('API search error, using fallback data:', err);
-      setDoctors(fallbackDoctors);
+      console.warn('API doctor search error:', err);
+      setDoctors([]); // Show empty — no fake dummy data
     } finally {
       setLoading(false);
     }
@@ -170,113 +104,119 @@ export const DoctorSearchPage = () => {
       {/* Search Header Banner */}
       <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs">
         <h1 className="text-2xl font-bold text-slate-900">
-          Find & Book Verified Doctors
+          {isDoctor ? 'Medical Specialists Directory' : 'Find & Book Verified Doctors'}
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-1 mb-6">
-          Compare qualifications, consultation fees, patient ratings, and book confirmed appointments
+          {isDoctor
+            ? 'Browse verified colleagues, clinical specializations, and credentials'
+            : 'Compare qualifications, consultation fees, patient ratings, and book confirmed appointments'}
         </p>
 
-        {/* Search & Filter Bar */}
+        {/* Search bar + filter inputs */}
         <form onSubmit={handleSearchSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-            <div className="md:col-span-5 relative">
-              <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Doctor name, symptom or condition..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full pl-10 pr-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600"
+                placeholder="Search by doctor name or condition..."
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 font-medium"
               />
             </div>
 
-            <div className="md:col-span-4">
-              <select
-                value={specialty}
-                onChange={(e) => setSpecialty(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600"
-              >
-                {specialties.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="md:col-span-3">
-              <Button
-                type="submit"
-                variant="primary"
-                fullWidth
-                size="md"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-xl text-sm"
-              >
-                Search Doctors
-              </Button>
-            </div>
+            <Button
+              type="submit"
+              variant="primary"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-6 rounded-xl text-sm whitespace-nowrap"
+            >
+              Search Doctors
+            </Button>
           </div>
 
-          {/* Sub-filters (Sort & Max Fee) */}
-          <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-slate-100 text-xs">
-            <div className="flex items-center gap-2 text-slate-600">
-              <SlidersHorizontal className="h-4 w-4 text-emerald-600" />
-              <span className="font-semibold">Sort By:</span>
-              <button
-                type="button"
-                onClick={() => setSortBy('rating')}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                  sortBy === 'rating' ? 'bg-emerald-100 text-emerald-800 font-semibold' : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                Highest Rated
-              </button>
-              <button
-                type="button"
-                onClick={() => setSortBy('experience')}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                  sortBy === 'experience' ? 'bg-emerald-100 text-emerald-800 font-semibold' : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                Experience
-              </button>
-              <button
-                type="button"
-                onClick={() => setSortBy('fee_asc')}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
-                  sortBy === 'fee_asc' ? 'bg-emerald-100 text-emerald-800 font-semibold' : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                Lowest Fee
-              </button>
+          {/* Quick Filters */}
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              <span>Filter by:</span>
             </div>
 
-            <div className="text-slate-500 font-medium">
-              Showing <span className="font-bold text-slate-800">{doctors.length}</span> verified specialists
-            </div>
+            {/* Specialty select */}
+            <select
+              value={specialty}
+              onChange={(e) => setSpecialty(e.target.value)}
+              aria-label="Filter by specialty"
+              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:border-emerald-600 cursor-pointer"
+            >
+              {specialties.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+
+            {/* Max fee select */}
+            <select
+              value={maxFee}
+              onChange={(e) => setMaxFee(e.target.value)}
+              aria-label="Filter by maximum consultation fee"
+              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:border-emerald-600 cursor-pointer"
+            >
+              <option value="">Any Consultation Fee</option>
+              <option value="50">Up to $50</option>
+              <option value="75">Up to $75</option>
+              <option value="100">Up to $100</option>
+              <option value="150">Up to $150</option>
+            </select>
+
+            {/* Sort by */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              aria-label="Sort doctors by"
+              className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:border-emerald-600 cursor-pointer ml-auto"
+            >
+              <option value="rating">Top Rated</option>
+              <option value="experience">Years of Experience</option>
+              <option value="fee-low">Fee: Low to High</option>
+              <option value="fee-high">Fee: High to Low</option>
+            </select>
           </div>
         </form>
       </div>
 
-      {/* Doctor Results List */}
+      {/* Results Section */}
       {loading ? (
-        <div className="py-16">
-          <LoadingSpinner fullPage={false} text="Loading doctors..." />
-        </div>
+        <LoadingSpinner fullPage={false} text="Searching available doctors..." />
       ) : doctors.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center">
+        <div className="bg-white border border-slate-200 rounded-3xl p-14 text-center">
           <Stethoscope className="h-10 w-10 text-slate-300 mx-auto mb-3" />
           <h3 className="text-base font-semibold text-slate-800">No doctors found</h3>
-          <p className="text-xs text-slate-500 mt-1">Try adjusting your specialty or search query filters.</p>
+          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            No registered practitioners match your criteria. Try adjusting your search query or removing filters.
+          </p>
+          {(query || specialty || maxFee) && (
+            <button
+              onClick={() => { setQuery(''); setSpecialty(''); setMaxFee(''); }}
+              className="mt-4 px-3.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-colors"
+            >
+              Clear All Filters
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
+          <p className="text-xs font-semibold text-slate-500">
+            Showing {doctors.length} verified {doctors.length === 1 ? 'practitioner' : 'practitioners'}
+          </p>
+
           {doctors.map((doctor) => (
             <div
               key={doctor._id}
-              className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 hover:border-slate-300 hover:shadow-sm transition-all"
+              className="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:border-emerald-200 hover:shadow-sm transition-all p-6"
             >
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 
-                {/* Doctor Bio Info */}
+                {/* Doctor basic profile */}
                 <div className="flex items-start gap-4">
                   <img
                     src={doctor.profileImage || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200'}
@@ -306,12 +246,12 @@ export const DoctorSearchPage = () => {
                       )}
                       <span className="flex items-center gap-1">
                         <Clock className="h-3.5 w-3.5 text-slate-400" />
-                        {doctor.experienceYears || 5} Years Experience
+                        {doctor.experienceYears || 0} Years Experience
                       </span>
                     </div>
 
                     <p className="text-xs text-slate-600 line-clamp-2 max-w-xl pt-1">
-                      {doctor.about || 'Dedicated practitioner offering comprehensive medical consultations and personalized patient care.'}
+                      {doctor.about}
                     </p>
                   </div>
                 </div>
@@ -323,25 +263,28 @@ export const DoctorSearchPage = () => {
                       <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                       <span>{doctor.averageRating || 4.9}</span>
                       <span className="text-xs text-slate-400 font-normal">
-                        ({doctor.totalReviews || 120} reviews)
+                        ({doctor.totalReviews || 0} reviews)
                       </span>
                     </div>
                     <div className="mt-1">
                       <span className="text-xs text-slate-400 font-normal">Consultation Fee</span>
                       <p className="text-xl font-bold text-emerald-700">
-                        ${doctor.consultationFee || 60}
+                        ${doctor.consultationFee || 50}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex gap-2 w-full md:w-auto">
                     <Button
-                      variant="primary"
+                      variant={isDoctor ? 'outline' : 'primary'}
                       size="sm"
                       onClick={() => navigate(`/doctors/${doctor._id || doctor.id}`)}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-xl text-xs w-full"
+                      className={isDoctor
+                        ? 'border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-medium py-2 px-4 rounded-xl text-xs w-full'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-xl text-xs w-full'
+                      }
                     >
-                      Book Visit
+                      {isDoctor ? 'View Profile' : 'Book Visit'}
                     </Button>
                   </div>
                 </div>

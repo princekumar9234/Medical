@@ -19,17 +19,33 @@ const strongPassword = body('password')
 // POST /api/auth/register
 router.post(
   '/register',
+  (req, res, next) => {
+    // Normalize fields from frontend requests
+    if (!req.body.fullName && req.body.name) {
+      req.body.fullName = req.body.name;
+    }
+    if (req.body.role) {
+      req.body.role = req.body.role.toLowerCase();
+    }
+    if (!req.body.confirmPassword && req.body.password) {
+      req.body.confirmPassword = req.body.password;
+    }
+    if (typeof req.body.phone === 'string' && !req.body.phone.trim()) {
+      delete req.body.phone;
+    }
+    next();
+  },
   [
     body('fullName').trim().notEmpty().withMessage('Full name is required.').isLength({ max: 100 }).withMessage('Name cannot exceed 100 characters.'),
     body('email').isEmail().withMessage('Please enter a valid email.').normalizeEmail(),
-    body('phone').optional().matches(/^[6-9]\d{9}$/).withMessage('Please enter a valid 10-digit phone number.'),
-    strongPassword,
-    body('confirmPassword').custom((value, { req }) => {
-      if (value !== req.body.password) throw new Error('Passwords do not match.');
+    body('phone').optional({ checkFalsy: true }).matches(/^[6-9]\d{9}$/).withMessage('Please enter a valid 10-digit phone number.'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters.'),
+    body('confirmPassword').optional().custom((value, { req }) => {
+      if (value && value !== req.body.password) throw new Error('Passwords do not match.');
       return true;
     }),
     body('role').isIn(['doctor', 'patient']).withMessage('Role must be doctor or patient.'),
-    body('specialization').if(body('role').equals('doctor')).notEmpty().withMessage('Specialization is required for doctors.'),
+    body('specialization').if(body('role').equals('doctor')).optional().notEmpty().withMessage('Specialization is required for doctors.'),
   ],
   validate,
   register

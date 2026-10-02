@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './features/auth/Auth.context';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { ProtectedRoute, DoctorRoute, PatientRoute, PublicRoute } from './components/ProtectedRoute';
 
 // Layout
 import Navbar from './components/Navbar';
@@ -21,11 +21,11 @@ import AppointmentsPage from './features/appointments/pages/AppointmentsPage';
 import ChatPage from './features/chat/pages/ChatPage';
 import NotificationsPage from './features/notifications/pages/NotificationsPage';
 
-// Patient Pages
+// Patient-Only Pages
 import PatientDashboard from './features/patient/pages/PatientDashboard';
 import PatientProfilePage from './features/patient/pages/PatientProfilePage';
 
-// Doctor Pages
+// Doctor-Only Pages
 import DoctorDashboard from './features/doctor/pages/DoctorDashboard';
 import DoctorProfilePage from './features/doctor/pages/DoctorProfilePage';
 import DoctorAvailabilityPage from './features/doctor/pages/DoctorAvailabilityPage';
@@ -36,89 +36,65 @@ export function App() {
       <BrowserRouter>
         <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-emerald-100 selection:text-emerald-900">
           <Navbar />
-          
+
           <main className="flex-1">
             <Routes>
-              {/* Public Routes */}
+              {/* ── Public Routes ─────────────────────────────────────────── */}
               <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
+
+              {/* Redirect logged-in users away from login/register */}
+              <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+              <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+              {/* Public info pages */}
               <Route path="/doctors" element={<DoctorSearchPage />} />
               <Route path="/doctors/:id" element={<DoctorPublicProfilePage />} />
               <Route path="/medicines" element={<MedicineSearchPage />} />
 
-              {/* Shared Protected Routes */}
+              {/* ── Shared Protected Routes (any authenticated user) ──────── */}
               <Route
                 path="/appointments"
-                element={
-                  <ProtectedRoute>
-                    <AppointmentsPage />
-                  </ProtectedRoute>
-                }
+                element={<ProtectedRoute><AppointmentsPage /></ProtectedRoute>}
               />
               <Route
                 path="/chat"
-                element={
-                  <ProtectedRoute>
-                    <ChatPage />
-                  </ProtectedRoute>
-                }
+                element={<ProtectedRoute><ChatPage /></ProtectedRoute>}
               />
               <Route
                 path="/notifications"
-                element={
-                  <ProtectedRoute>
-                    <NotificationsPage />
-                  </ProtectedRoute>
-                }
+                element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>}
               />
 
-              {/* Patient Protected Routes */}
+              {/* ── Patient-Only Routes ───────────────────────────────────── */}
               <Route
                 path="/patient/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <PatientDashboard />
-                  </ProtectedRoute>
-                }
+                element={<PatientRoute><PatientDashboard /></PatientRoute>}
               />
               <Route
                 path="/patient/profile"
-                element={
-                  <ProtectedRoute>
-                    <PatientProfilePage />
-                  </ProtectedRoute>
-                }
+                element={<PatientRoute><PatientProfilePage /></PatientRoute>}
               />
 
-              {/* Doctor Protected Routes */}
+              {/* ── Doctor-Only Routes ────────────────────────────────────── */}
               <Route
                 path="/doctor/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <DoctorDashboard />
-                  </ProtectedRoute>
-                }
+                element={<DoctorRoute><DoctorDashboard /></DoctorRoute>}
               />
               <Route
                 path="/doctor/profile"
-                element={
-                  <ProtectedRoute>
-                    <DoctorProfilePage />
-                  </ProtectedRoute>
-                }
+                element={<DoctorRoute><DoctorProfilePage /></DoctorRoute>}
               />
               <Route
                 path="/doctor/availability"
-                element={
-                  <ProtectedRoute>
-                    <DoctorAvailabilityPage />
-                  </ProtectedRoute>
-                }
+                element={<DoctorRoute><DoctorAvailabilityPage /></DoctorRoute>}
               />
 
-              {/* Catch-all */}
+              {/* ── Legacy / convenience redirects ───────────────────────── */}
+              <Route path="/dashboard" element={<Navigate to="/" replace />} />
+              <Route path="/profile" element={<Navigate to="/" replace />} />
+
+              {/* ── Catch-all ─────────────────────────────────────────────── */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>

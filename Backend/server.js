@@ -23,30 +23,99 @@ const io = new Server(server, {
 // Store io instance on app for use in controllers
 app.set('io', io);
 
+// Active online users tracking
+const onlineUsers = new Map(); // userId -> Set(socketId)
+
 io.on('connection', (socket) => {
-  console.log(`🔌 Socket connected: ${socket.id}`);
+  let connectedUserId = null;
 
-  // Join conversation rooms
-  socket.on('join_conversation', (conversationId) => {
-    socket.join(conversationId);
-    console.log(`📥 Socket ${socket.id} joined conversation: ${conversationId}`);
+  // User online registration
+  const registerUserOnline = (userId) => {
+    if (!userId) return;
+    connectedUserId = String(userId);
+    socket.join(`user_${connectedUserId}`);
+
+    if (!onlineUsers.has(connectedUserId)) {
+      onlineUsers.set(connectedUserId, new Set());
+    }
+    onlineUsers.get(connectedUserId).add(socket.id);
+
+    // Broadcast user online status
+    io.emit('userOnline', { userId: connectedUserId, isOnline: true });
+    io.emit('user_online', { userId: connectedUserId, isOnline: true });
+    io.emit('user_status_changed', { userId: connectedUserId, status: 'online' });
+  };
+
+  socket.on('user_online', registerUserOnline);
+  socket.on('userOnline', registerUserOnline);
+  socket.on('register_user', registerUserOnline);
+  socket.on('joinUserRoom', registerUserOnline);
+
+  // Return list of currently online users
+  socket.on('get_online_users', (callback) => {
+    const list = Array.from(onlineUsers.keys());
+    if (typeof callback === 'function') callback(list);
+    else socket.emit('online_users_list', list);
   });
 
-  socket.on('leave_conversation', (conversationId) => {
-    socket.leave(conversationId);
+  // Join conversation room
+  const handleJoinConversation = (conversationId) => {
+    if (!conversationId) return;
+    const room = String(conversationId);
+    socket.join(room);
+  };
+  socket.on('join_conversation', handleJoinConversation);
+  socket.on('joinConversation', handleJoinConversation);
+
+  // Leave conversation room
+  const handleLeaveConversation = (conversationId) => {
+    if (!conversationId) return;
+    const room = String(conversationId);
+    socket.leave(room);
+  };
+  socket.on('leave_conversation', handleLeaveConversation);
+  socket.on('leaveConversation', handleLeaveConversation);
+
+  // Real-time typing indicators
+  socket.on('typing', ({ conversationId, userId, userName, role }) => {
+    if (!conversationId) return;
+    socket.to(String(conversationId)).emit('typing', {
+      conversationId,
+      userId,
+      userName: userName || (role === 'doctor' ? 'Doctor' : 'Patient'),
+      role,
+    });
   });
 
-  // Real-time typing indicator
-  socket.on('typing', ({ conversationId, userId }) => {
-    socket.to(conversationId).emit('typing', { userId });
-  });
+  const handleStopTyping = ({ conversationId, userId }) => {
+    if (!conversationId) return;
+    socket.to(String(conversationId)).emit('stop_typing', { conversationId, userId });
+    socket.to(String(conversationId)).emit('stopTyping', { conversationId, userId });
+  };
+  socket.on('stop_typing', handleStopTyping);
+  socket.on('stopTyping', handleStopTyping);
 
-  socket.on('stop_typing', ({ conversationId, userId }) => {
-    socket.to(conversationId).emit('stop_typing', { userId });
-  });
+  // Message read receipts
+  const handleMessageRead = ({ conversationId, readerId }) => {
+    if (!conversationId) return;
+    socket.to(String(conversationId)).emit('messageRead', { conversationId, readerId });
+    socket.to(String(conversationId)).emit('message_read', { conversationId, readerId });
+  };
+  socket.on('messageRead', handleMessageRead);
+  socket.on('message_read', handleMessageRead);
 
+  // Disconnect handler
   socket.on('disconnect', () => {
-    console.log(`❌ Socket disconnected: ${socket.id}`);
+    if (connectedUserId && onlineUsers.has(connectedUserId)) {
+      const userSockets = onlineUsers.get(connectedUserId);
+      userSockets.delete(socket.id);
+      if (userSockets.size === 0) {
+        onlineUsers.delete(connectedUserId);
+        io.emit('userOffline', { userId: connectedUserId, isOnline: false });
+        io.emit('user_offline', { userId: connectedUserId, isOnline: false });
+        io.emit('user_status_changed', { userId: connectedUserId, status: 'offline' });
+      }
+    }
   });
 });
 

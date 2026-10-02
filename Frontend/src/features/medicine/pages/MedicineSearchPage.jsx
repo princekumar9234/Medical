@@ -1,19 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Search, 
   Pill, 
   Barcode, 
-  ShieldAlert, 
-  CheckCircle, 
+  Camera,
+  AlertCircle, 
   Info, 
-  AlertTriangle,
-  FileText,
-  Building
+  Sparkles,
+  Loader2,
+  CheckCircle2,
+  X
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { medicineService } from '../services/medicine.service';
 import Button from '../../../components/ui/Button';
-import Modal from '../../../components/ui/Modal';
-import Badge from '../../../components/ui/Badge';
+import BarcodeScannerModal from '../components/BarcodeScannerModal';
+import MedicineDetailsModal from '../components/MedicineDetailsModal';
+import MedicineCard from '../components/MedicineCard';
+import RecentScans from '../components/RecentScans';
 
 export const MedicineSearchPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -21,23 +25,29 @@ export const MedicineSearchPage = () => {
   const [medicines, setMedicines] = useState([]);
   const [selectedMedicine, setSelectedMedicine] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [scannerLoading, setScannerLoading] = useState(false);
+  const [notFoundBarcode, setNotFoundBarcode] = useState(null);
+  const [refreshHistoryTrigger, setRefreshHistoryTrigger] = useState(0);
 
-  // Comprehensive fallback medicine list for immediate exploration
+  // Initial verified medicines fallback if offline
   const defaultMedicines = [
     {
       _id: 'med-1',
       brandName: 'Amoxil',
       genericName: 'Amoxicillin Trihydrate',
-      category: 'Antibiotics',
+      category: 'Antibiotics / Penicillins',
       manufacturer: 'GlaxoSmithKline',
       barcode: '8901086001234',
       dosageForm: 'Oral Capsule 500mg',
       prescriptionRequired: true,
+      clinicalUses: ['Bacterial respiratory tract infections', 'Otitis media', 'Streptococcal pharyngitis', 'Skin infections'],
       indications: ['Bacterial respiratory tract infections', 'Otitis media', 'Streptococcal pharyngitis', 'Skin infections'],
       dosage: 'Adults: 250mg to 500mg every 8 hours or 500mg to 875mg every 12 hours.',
       sideEffects: ['Nausea', 'Diarrhea', 'Skin rash', 'Headache'],
       contraindications: ['Hypersensitivity to beta-lactam antibiotics (penicillins/cephalosporins)'],
       storage: 'Store below 25°C in a dry place protected from direct sunlight.',
+      source: 'CareConnect Verified Drug DB',
     },
     {
       _id: 'med-2',
@@ -48,11 +58,13 @@ export const MedicineSearchPage = () => {
       barcode: '8901086005678',
       dosageForm: 'Oral Tablet 20mg',
       prescriptionRequired: true,
+      clinicalUses: ['Primary hypercholesterolemia', 'Prevention of cardiovascular events in high-risk patients'],
       indications: ['Primary hypercholesterolemia', 'Prevention of cardiovascular events in high-risk patients'],
       dosage: 'Usually 10mg to 20mg once daily taken in the evening with or without food.',
       sideEffects: ['Muscle ache (myalgia)', 'Joint pain', 'Mild gastrointestinal discomfort', 'Elevated liver enzymes'],
       contraindications: ['Active liver disease', 'Unexplained persistent elevations in serum transaminases', 'Pregnancy and lactation'],
       storage: 'Store at 20°C to 25°C.',
+      source: 'CareConnect Verified Drug DB',
     },
     {
       _id: 'med-3',
@@ -63,11 +75,13 @@ export const MedicineSearchPage = () => {
       barcode: '8901086009876',
       dosageForm: 'Extended Release Tablet 500mg',
       prescriptionRequired: true,
+      clinicalUses: ['Management of Type 2 Diabetes Mellitus as adjunct to diet and physical activity'],
       indications: ['Management of Type 2 Diabetes Mellitus as adjunct to diet and physical activity'],
       dosage: 'Starting dose 500mg once daily with evening meal, titrate according to glycemic response.',
       sideEffects: ['Abdominal discomfort', 'Metallic taste', 'Diarrhea', 'Decreased vitamin B12 absorption'],
       contraindications: ['Severe renal impairment (eGFR < 30 mL/min)', 'Acute metabolic acidosis', 'Severe dehydration'],
       storage: 'Keep container tightly closed, store below 30°C.',
+      source: 'CareConnect Verified Drug DB',
     },
     {
       _id: 'med-4',
@@ -78,11 +92,13 @@ export const MedicineSearchPage = () => {
       barcode: '8901086003412',
       dosageForm: 'Oral Tablet 500mg',
       prescriptionRequired: false,
+      clinicalUses: ['Temporary relief of minor aches and pains due to headache, backache, arthritis, and reduction of fever'],
       indications: ['Temporary relief of minor aches and pains due to headache, backache, arthritis, and reduction of fever'],
       dosage: 'Adults: 500mg to 1000mg every 4 to 6 hours as needed. Do not exceed 4000mg in 24 hours.',
       sideEffects: ['Rare in therapeutic doses. Hepatotoxicity with overdose'],
       contraindications: ['Severe hepatic failure or active liver disease'],
       storage: 'Store at room temperature 15°C to 30°C.',
+      source: 'CareConnect Verified Drug DB',
     },
     {
       _id: 'med-5',
@@ -93,18 +109,78 @@ export const MedicineSearchPage = () => {
       barcode: '8901086007721',
       dosageForm: 'Delayed-Release Capsule 20mg',
       prescriptionRequired: false,
+      clinicalUses: ['Gastroesophageal reflux disease (GERD)', 'Gastric and duodenal ulcers', 'Zollinger-Ellison syndrome'],
       indications: ['Gastroesophageal reflux disease (GERD)', 'Gastric and duodenal ulcers', 'Zollinger-Ellison syndrome'],
       dosage: '20mg once daily in the morning, 30 minutes before breakfast.',
       sideEffects: ['Headache', 'Abdominal pain', 'Constipation', 'Flatulence'],
       contraindications: ['Concomitant administration with nelfinavir or rilpivirine'],
       storage: 'Store between 15°C and 30°C in light-resistant container.',
+      source: 'CareConnect Verified Drug DB',
+    },
+    {
+      _id: 'med-6',
+      brandName: 'Augmentin 625 Duo',
+      genericName: 'Amoxicillin + Clavulanic Acid',
+      category: 'Antibiotics / Penicillin Combinations',
+      manufacturer: 'GlaxoSmithKline',
+      barcode: '8901117001423',
+      dosageForm: 'Oral Film-Coated Tablet',
+      prescriptionRequired: true,
+      clinicalUses: ['Acute bacterial sinusitis', 'Community-acquired pneumonia', 'Dental infections'],
+      indications: ['Severe respiratory tract infections', 'Bacterial sinusitis & otitis media'],
+      dosage: 'One 625mg tablet twice daily with food.',
+      sideEffects: ['Diarrhea', 'Nausea', 'Vaginal candidiasis'],
+      contraindications: ['History of penicillin-associated jaundice'],
+      storage: 'Store below 25°C in moisture-proof packaging.',
+      source: 'CareConnect Verified Drug DB',
+    },
+    {
+      _id: 'med-7',
+      brandName: 'Pan 40 Tablet',
+      genericName: 'Pantoprazole Sodium',
+      category: 'Gastrointestinal / PPI',
+      manufacturer: 'Alkem Laboratories Ltd.',
+      barcode: '8901456789012',
+      dosageForm: 'Gastro-resistant Tablet 40mg',
+      prescriptionRequired: true,
+      clinicalUses: ['Erosive esophagitis', 'GERD', 'Zollinger-Ellison syndrome'],
+      indications: ['Acidity, heartburn and GERD'],
+      dosage: '40mg once daily in the morning 30 minutes before food.',
+      sideEffects: ['Headache', 'Diarrhea', 'Nausea'],
+      contraindications: ['Hypersensitivity to pantoprazole'],
+      storage: 'Store in cool and dry place away from direct sunlight.',
+      source: 'CareConnect Verified Drug DB',
     }
   ];
 
+  // Fetch verified medicines from Backend on mount
+  useEffect(() => {
+    const loadMedicines = async () => {
+      try {
+        const res = await medicineService.getAllMedicines();
+        const list = res.data?.data?.medicines;
+        if (Array.isArray(list) && list.length > 0) {
+          setMedicines(list);
+        } else {
+          setMedicines(defaultMedicines);
+        }
+      } catch {
+        setMedicines(defaultMedicines);
+      }
+    };
+    loadMedicines();
+  }, []);
+
+  // 1. Search by Brand / Generic Name
   const handleSearch = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!searchTerm.trim()) {
-      setMedicines(defaultMedicines);
+      try {
+        const res = await medicineService.getAllMedicines();
+        setMedicines(res.data?.data?.medicines || defaultMedicines);
+      } catch {
+        setMedicines(defaultMedicines);
+      }
       return;
     }
 
@@ -115,18 +191,19 @@ export const MedicineSearchPage = () => {
       if (list.length > 0) {
         setMedicines(list);
       } else {
-        // Fallback filter
-        const filtered = defaultMedicines.filter(m => 
-          m.brandName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          m.genericName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          m.category.toLowerCase().includes(searchTerm.toLowerCase())
+        const filtered = defaultMedicines.filter(
+          (m) =>
+            m.brandName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.genericName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.category.toLowerCase().includes(searchTerm.toLowerCase())
         );
         setMedicines(filtered);
       }
-    } catch (err) {
-      const filtered = defaultMedicines.filter(m => 
-        m.brandName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.genericName.toLowerCase().includes(searchTerm.toLowerCase())
+    } catch {
+      const filtered = defaultMedicines.filter(
+        (m) =>
+          m.brandName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          m.genericName.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setMedicines(filtered);
     } finally {
@@ -134,37 +211,80 @@ export const MedicineSearchPage = () => {
     }
   };
 
-  const handleBarcodeSearch = async (e) => {
-    e.preventDefault();
-    if (!barcodeInput.trim()) return;
+  // 2. Barcode Lookup (Common core for camera scanner and manual entry)
+  const lookupBarcode = async (barcodeVal) => {
+    const clean = String(barcodeVal || '').trim();
+    if (!clean) {
+      toast.error('Please enter a barcode number.');
+      return;
+    }
 
-    setIsSearching(true);
+    setScannerLoading(true);
+    setNotFoundBarcode(null);
+    const toastId = toast.loading('Finding medicine information...');
+
     try {
-      const res = await medicineService.searchByBarcode(barcodeInput.trim());
-      const med = res.data?.data?.medicine;
-      if (med) {
-        setMedicines([med]);
+      const res = await medicineService.searchByBarcode(clean);
+      const data = res.data;
+
+      if (data?.found && data?.data?.medicine) {
+        toast.success(`Found: ${data.data.medicine.brandName}`, { id: toastId });
+        const med = data.data.medicine;
         setSelectedMedicine(med);
+
+        // Prepend to visible list if not already present
+        setMedicines((prev) => {
+          const exists = prev.some((m) => m.barcode === med.barcode);
+          if (exists) return prev;
+          return [med, ...prev];
+        });
+
+        // Trigger scan history component to refresh
+        setRefreshHistoryTrigger((prev) => prev + 1);
       } else {
-        const found = defaultMedicines.find(m => m.barcode === barcodeInput.trim());
-        if (found) {
-          setMedicines([found]);
-          setSelectedMedicine(found);
+        // Fallback local check in defaultMedicines if offline
+        const localMatch = defaultMedicines.find((m) => m.barcode === clean);
+        if (localMatch) {
+          toast.success(`Found: ${localMatch.brandName}`, { id: toastId });
+          setSelectedMedicine(localMatch);
+          setRefreshHistoryTrigger((prev) => prev + 1);
         } else {
-          alert(`No medicine matched with Barcode: ${barcodeInput}`);
+          toast.error('Medicine information not found.', { id: toastId });
+          setNotFoundBarcode(clean);
+          setRefreshHistoryTrigger((prev) => prev + 1);
         }
       }
     } catch (err) {
-      const found = defaultMedicines.find(m => m.barcode === barcodeInput.trim());
-      if (found) {
-        setMedicines([found]);
-        setSelectedMedicine(found);
+      console.error('Barcode lookup error:', err);
+      // Fallback local check
+      const localMatch = defaultMedicines.find((m) => m.barcode === clean);
+      if (localMatch) {
+        toast.success(`Found: ${localMatch.brandName}`, { id: toastId });
+        setSelectedMedicine(localMatch);
       } else {
-        alert(`No medicine matched with Barcode: ${barcodeInput}`);
+        toast.error('Medicine information could not be found for this barcode.', { id: toastId });
+        setNotFoundBarcode(clean);
       }
     } finally {
-      setIsSearching(false);
+      setScannerLoading(false);
     }
+  };
+
+  // 3. Manual Barcode Search Form Submit
+  const handleBarcodeSearch = async (e) => {
+    e.preventDefault();
+    if (!barcodeInput.trim()) {
+      setIsScannerOpen(true);
+      return;
+    }
+    await lookupBarcode(barcodeInput.trim());
+  };
+
+  // 4. Scanner Modal Callback
+  const handleScanSuccess = async (scannedBarcode) => {
+    setIsScannerOpen(false);
+    setBarcodeInput(scannedBarcode);
+    await lookupBarcode(scannedBarcode);
   };
 
   const displayList = medicines.length > 0 ? medicines : defaultMedicines;
@@ -198,43 +318,89 @@ export const MedicineSearchPage = () => {
                 placeholder="Search by brand or generic name (e.g. Amoxicillin, Atorvastatin)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600"
+                className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-colors"
               />
             </div>
             <Button
               type="submit"
               variant="primary"
               size="md"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-4 rounded-xl text-xs shrink-0"
+              isLoading={isSearching}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-4 rounded-xl text-xs shrink-0 shadow-xs"
             >
               Search Drug
             </Button>
           </form>
 
-          {/* By Barcode */}
-          <form onSubmit={handleBarcodeSearch} className="lg:col-span-5 flex gap-2">
-            <div className="relative flex-1">
-              <Barcode className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Scan / Enter Barcode (e.g. 8901086001234)..."
-                value={barcodeInput}
-                onChange={(e) => setBarcodeInput(e.target.value)}
-                className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600"
-              />
-            </div>
+          {/* By Barcode Input & Scanner */}
+          <div className="lg:col-span-5 flex gap-2">
+            <form onSubmit={handleBarcodeSearch} className="flex-1 flex gap-2">
+              <div className="relative flex-1">
+                <Barcode className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Scan / Enter Barcode (e.g. 8901086001234)..."
+                  value={barcodeInput}
+                  onChange={(e) => setBarcodeInput(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-colors font-mono"
+                />
+              </div>
+              <Button
+                type="submit"
+                variant="outline"
+                size="md"
+                className="border-slate-300 text-slate-700 hover:bg-slate-50 py-2.5 px-3.5 rounded-xl text-xs shrink-0 font-medium"
+              >
+                Search
+              </Button>
+            </form>
+
             <Button
-              type="submit"
-              variant="outline"
+              type="button"
+              variant="primary"
               size="md"
-              className="border-slate-300 text-slate-700 hover:bg-slate-50 py-2.5 px-4 rounded-xl text-xs shrink-0"
+              onClick={() => setIsScannerOpen(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-3.5 sm:px-4 rounded-xl text-xs shrink-0 flex items-center gap-1.5 shadow-xs"
             >
-              Scan Barcode
+              <Camera className="h-4 w-4" />
+              <span>Scan Barcode</span>
             </Button>
-          </form>
+          </div>
 
         </div>
       </div>
+
+      {/* Loading Barcode Search Banner */}
+      {scannerLoading && (
+        <div className="bg-emerald-50 border border-emerald-200/90 rounded-2xl p-4 flex items-center gap-3 text-emerald-900 animate-pulse">
+          <Loader2 className="h-5 w-5 text-emerald-600 animate-spin shrink-0" />
+          <div className="text-xs sm:text-sm">
+            <strong>Finding medicine information...</strong> Querying verified pharmacology records and barcode registries.
+          </div>
+        </div>
+      )}
+
+      {/* Not Found Alert Banner */}
+      {notFoundBarcode && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start justify-between gap-3 text-amber-900">
+          <div className="flex items-start gap-2.5 text-xs sm:text-sm">
+            <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold">Medicine information not found</p>
+              <p className="text-xs text-amber-800 mt-0.5">
+                No verified pharmaceutical record matched barcode <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-200">{notFoundBarcode}</code>. Always verify the packaging or consult a licensed pharmacist.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setNotFoundBarcode(null)}
+            className="text-amber-500 hover:text-amber-700 p-1 rounded-lg"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
 
       {/* Medicines Results Grid */}
       <div className="space-y-4">
@@ -245,148 +411,39 @@ export const MedicineSearchPage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {displayList.map((med) => (
-            <div
-              key={med._id}
-              onClick={() => setSelectedMedicine(med)}
-              className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 hover:border-emerald-300 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs shrink-0">
-                    <Pill className="h-5 w-5" />
-                  </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                    med.prescriptionRequired
-                      ? 'bg-rose-50 text-rose-700 border-rose-200'
-                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                  }`}>
-                    {med.prescriptionRequired ? 'Rx Prescription Only' : 'OTC Available'}
-                  </span>
-                </div>
-
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 leading-tight">
-                    {med.brandName}
-                  </h3>
-                  <p className="text-xs font-semibold text-emerald-700 mt-0.5">
-                    {med.genericName}
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    {med.dosageForm} • {med.manufacturer}
-                  </p>
-                </div>
-
-                <div className="p-2.5 bg-slate-50 rounded-xl text-xs text-slate-600 space-y-1">
-                  <p className="font-semibold text-slate-700">Clinical Uses:</p>
-                  <p className="line-clamp-2 text-[11px]">
-                    {Array.isArray(med.indications) ? med.indications.join(', ') : med.indications}
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 mt-3">
-                <span className="flex items-center gap-1 font-mono text-[11px]">
-                  <Barcode className="h-3.5 w-3.5 text-slate-400" />
-                  {med.barcode}
-                </span>
-                <span className="text-emerald-600 font-semibold hover:underline">
-                  View Full Guide →
-                </span>
-              </div>
-            </div>
+            <MedicineCard
+              key={med._id || med.barcode}
+              medicine={med}
+              onSelect={(m) => setSelectedMedicine(m)}
+            />
           ))}
         </div>
       </div>
 
-      {/* Detailed Medicine Details Modal */}
-      {selectedMedicine && (
-        <Modal
-          isOpen={!!selectedMedicine}
-          onClose={() => setSelectedMedicine(null)}
-          title={selectedMedicine.brandName}
-          subtitle={`${selectedMedicine.genericName} • ${selectedMedicine.dosageForm}`}
-          maxWidth="max-w-2xl"
-        >
-          <div className="space-y-4 text-xs text-slate-700">
-            <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-slate-100">
-              <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${
-                selectedMedicine.prescriptionRequired
-                  ? 'bg-rose-50 text-rose-700 border-rose-200'
-                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-              }`}>
-                {selectedMedicine.prescriptionRequired ? 'Prescription Required (Schedule H/Rx)' : 'Over the Counter (OTC)'}
-              </span>
-              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
-                Category: {selectedMedicine.category}
-              </span>
-              <span className="px-2.5 py-1 rounded-full text-xs font-mono bg-slate-100 text-slate-700">
-                Barcode: {selectedMedicine.barcode}
-              </span>
-            </div>
+      {/* Recent Barcode Scans Section (Requirement 10) */}
+      <RecentScans
+        onSelectMedicine={(m) => setSelectedMedicine(m)}
+        refreshTrigger={refreshHistoryTrigger}
+      />
 
-            <div>
-              <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-1">
-                Manufacturer & Origin
-              </h4>
-              <p>{selectedMedicine.manufacturer}</p>
-            </div>
+      {/* Real-time Barcode Scanner Modal (Requirements 1 - 4) */}
+      <BarcodeScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        onScanSuccess={handleScanSuccess}
+        onManualEntryClick={() => {
+          setIsScannerOpen(false);
+          const barcodeInputEl = document.querySelector('input[placeholder*="Scan / Enter Barcode"]');
+          if (barcodeInputEl) barcodeInputEl.focus();
+        }}
+      />
 
-            <div>
-              <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-1">
-                Clinical Indications
-              </h4>
-              <ul className="list-disc pl-4 space-y-0.5">
-                {Array.isArray(selectedMedicine.indications) ? (
-                  selectedMedicine.indications.map((ind, i) => <li key={i}>{ind}</li>)
-                ) : (
-                  <li>{selectedMedicine.indications}</li>
-                )}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-1">
-                Recommended Standard Dosage
-              </h4>
-              <p className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                {selectedMedicine.dosage}
-              </p>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-rose-700 uppercase tracking-wider mb-1">
-                Potential Side Effects
-              </h4>
-              <p>{Array.isArray(selectedMedicine.sideEffects) ? selectedMedicine.sideEffects.join(', ') : selectedMedicine.sideEffects}</p>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-amber-700 uppercase tracking-wider mb-1">
-                Contraindications & Warnings
-              </h4>
-              <p>{Array.isArray(selectedMedicine.contraindications) ? selectedMedicine.contraindications.join(', ') : selectedMedicine.contraindications}</p>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-slate-900 uppercase tracking-wider mb-1">
-                Storage & Shelf Life
-              </h4>
-              <p>{selectedMedicine.storage}</p>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setSelectedMedicine(null)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-5 rounded-lg text-xs"
-              >
-                Close Drug Guide
-              </Button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      {/* Detailed Medicine Details Modal (Requirement 7) */}
+      <MedicineDetailsModal
+        isOpen={!!selectedMedicine}
+        onClose={() => setSelectedMedicine(null)}
+        medicine={selectedMedicine}
+      />
 
     </div>
   );

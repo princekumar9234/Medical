@@ -72,4 +72,26 @@ const requireEmailVerified = (req, res, next) => {
   next();
 };
 
-module.exports = { protect, authorize, requireEmailVerified };
+/**
+ * Optional authentication — sets req.user if valid token provided, otherwise proceeds
+ */
+const optionalAuth = async (req, res, next) => {
+  try {
+    let token;
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+    if (token) {
+      const decoded = verifyToken(token);
+      const user = await User.findById(decoded.id).select('+tokenVersion');
+      if (user && user.isActive && user.tokenVersion === decoded.tokenVersion) {
+        req.user = user;
+      }
+    }
+  } catch {
+    // Ignore invalid/expired tokens for optional auth
+  }
+  next();
+};
+
+module.exports = { protect, authorize, requireEmailVerified, optionalAuth };

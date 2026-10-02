@@ -1,420 +1,499 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Calendar, 
-  Clock, 
-  Video, 
-  Building, 
-  User, 
-  Stethoscope, 
-  FileText, 
-  XCircle, 
-  CheckCircle, 
+import {
+  Calendar,
+  Clock,
+  Video,
+  Building,
+  User,
+  Stethoscope,
+  FileText,
+  XCircle,
+  CheckCircle,
   MessageSquare,
-  Filter,
-  Download
+  Download,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+  Plus,
 } from 'lucide-react';
 import { useAuth } from '../../auth/Auth.context';
 import { appointmentService } from '../services/appointment.service';
-import { StatusBadge } from '../../../components/ui/Badge';
 import Button from '../../../components/ui/Button';
 import Modal from '../../../components/ui/Modal';
-import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { jsPDF } from 'jspdf';
+import toast from 'react-hot-toast';
 
+// ── Helpers ─────────────────────────────────────────────────────────────────────
+const formatDate = (dateStr) => {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('en-IN', {
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+  });
+};
+
+const getInitials = (name = '') =>
+  name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?';
+
+// ── Status Badge ─────────────────────────────────────────────────────────────────
+const StatusBadge = ({ status }) => {
+  const map = {
+    pending:   { label: 'Pending',   cls: 'bg-amber-50 text-amber-700 border-amber-200' },
+    confirmed: { label: 'Confirmed', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+    rejected:  { label: 'Rejected',  cls: 'bg-red-50 text-red-700 border-red-200' },
+    cancelled: { label: 'Cancelled', cls: 'bg-slate-100 text-slate-500 border-slate-200' },
+    completed: { label: 'Completed', cls: 'bg-sky-50 text-sky-700 border-sky-200' },
+  };
+  const s = map[status?.toLowerCase()] || { label: status || '—', cls: 'bg-slate-100 text-slate-600 border-slate-200' };
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${s.cls}`}>
+      {s.label}
+    </span>
+  );
+};
+
+// ── Empty State ──────────────────────────────────────────────────────────────────
+const EmptyState = ({ isDoctor }) => (
+  <div className="bg-white border border-slate-200 rounded-3xl p-14 text-center">
+    <Calendar className="h-10 w-10 text-slate-300 mx-auto mb-4" />
+    <h3 className="text-base font-semibold text-slate-800">No appointments found</h3>
+    <p className="text-xs text-slate-500 mt-1.5 max-w-xs mx-auto">
+      {isDoctor
+        ? 'You have no patient appointments here. Patients will appear when they book a consultation with you.'
+        : 'You have no appointments yet. Click "Book a Doctor" to schedule your first consultation.'}
+    </p>
+  </div>
+);
+
+// ── Main Page ────────────────────────────────────────────────────────────────────
 export const AppointmentsPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Role — always lowercase comparison
+  const userRole = (user?.role || '').toLowerCase();
+  const isDoctor = userRole === 'doctor';
+
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('ALL');
-  const [selectedAppointment, setSelectedAppointment] = useState(null);
-  
-  // Doctor prescription modal state
-  const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState(false);
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('all');
+
+  // Prescription modal
+  const [prescriptionModal, setPrescriptionModal] = useState(false);
+  const [selectedApt, setSelectedApt] = useState(null);
   const [rxDiagnosis, setRxDiagnosis] = useState('');
-  const [rxMedicines, setRxMedicines] = useState([
-    { name: '', dosage: '', frequency: '', duration: '' }
-  ]);
+  const [rxMedicines, setRxMedicines] = useState([{ name: '', dosage: '', frequency: '', duration: '' }]);
   const [rxNotes, setRxNotes] = useState('');
+  const [rxLoading, setRxLoading] = useState(false);
 
-  const isDoctor = user?.role === 'DOCTOR';
+  // Cancel confirm
+  const [cancellingId, setCancellingId] = useState(null);
 
-  // Demo fallback appointments
-  const fallbackList = [
-    {
-      _id: 'apt-001',
-      doctorId: {
-        _id: 'doc-1',
-        name: 'Dr. Sarah Smith',
-        specialization: 'Cardiology',
-      },
-      patientId: {
-        _id: 'pat-1',
-        name: 'John Doe',
-        phone: '+1 (555) 392-1049',
-      },
-      appointmentDate: '2026-10-04',
-      appointmentTime: '10:30 AM',
-      appointmentType: 'VIDEO',
-      status: 'CONFIRMED',
-      reason: 'Routine hypertension follow-up & blood work review',
-      symptoms: 'Mild dizziness occasionally upon standing',
-      createdAt: '2026-10-01',
-    },
-    {
-      _id: 'apt-002',
-      doctorId: {
-        _id: 'doc-2',
-        name: 'Dr. Marcus Vance',
-        specialization: 'General Medicine',
-      },
-      patientId: {
-        _id: 'pat-2',
-        name: 'Alice Johnson',
-        phone: '+1 (555) 782-9901',
-      },
-      appointmentDate: '2026-10-07',
-      appointmentTime: '02:00 PM',
-      appointmentType: 'IN_PERSON',
-      status: 'SCHEDULED',
-      reason: 'Seasonal allergy assessment',
-      symptoms: 'Sneezing, nasal congestion for 2 weeks',
-      createdAt: '2026-10-01',
-    },
-    {
-      _id: 'apt-003',
-      doctorId: {
-        _id: 'doc-1',
-        name: 'Dr. Sarah Smith',
-        specialization: 'Cardiology',
-      },
-      patientId: {
-        _id: 'pat-3',
-        name: 'Robert Miller',
-        phone: '+1 (555) 441-2093',
-      },
-      appointmentDate: '2026-09-28',
-      appointmentTime: '11:15 AM',
-      appointmentType: 'VIDEO',
-      status: 'COMPLETED',
-      reason: 'Post-medication cardiac evaluation',
-      symptoms: 'None reported, feeling stable',
-      createdAt: '2026-09-25',
-    }
-  ];
-
-  const fetchAppointments = async () => {
+  // ── Fetch from API only — NO FALLBACK DATA ────────────────────────────────────
+  const fetchAppointments = useCallback(async () => {
     setLoading(true);
+    setError('');
     try {
-      const res = await appointmentService.getMyAppointments();
+      const res = await appointmentService.getMyAppointments({ limit: 100 });
       const list = res.data?.data?.appointments || [];
-      setAppointments(list.length > 0 ? list : fallbackList);
+      setAppointments(list);
     } catch (err) {
-      setAppointments(fallbackList);
+      setError('Failed to load appointments. Please try again.');
+      setAppointments([]); // Show empty — no fake data
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchAppointments();
   }, []);
 
-  const handleUpdateStatus = async (id, newStatus) => {
-    try {
-      await appointmentService.updateStatus(id, newStatus);
-      setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: newStatus } : a));
-    } catch (err) {
-      // Local state update for instant responsive feel
-      setAppointments(prev => prev.map(a => a._id === id ? { ...a, status: newStatus } : a));
-    }
-  };
+  useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
 
-  const handleAddMedicineRow = () => {
-    setRxMedicines([...rxMedicines, { name: '', dosage: '', frequency: '', duration: '' }]);
-  };
+  // ── Tab filtering — matches lowercase backend status ─────────────────────────
+  const tabs = [
+    { key: 'all',       label: 'All' },
+    { key: 'pending',   label: 'Pending' },
+    { key: 'upcoming',  label: 'Upcoming' },
+    { key: 'completed', label: 'Completed' },
+    { key: 'cancelled', label: 'Cancelled / Rejected' },
+  ];
 
-  const handleMedicineChange = (index, field, value) => {
-    const updated = [...rxMedicines];
-    updated[index][field] = value;
-    setRxMedicines(updated);
-  };
-
-  const handleSaveAndGeneratePrescription = (e) => {
-    e.preventDefault();
-    if (!rxDiagnosis) {
-      alert('Please enter a diagnosis');
-      return;
-    }
-
-    const doc = new jsPDF();
-    doc.setFillColor(22, 163, 74);
-    doc.rect(0, 0, 210, 28, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.text('CareConnect Healthcare Platform', 15, 18);
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Official Digital Prescription', 145, 18);
-
-    doc.setTextColor(30, 41, 59);
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`Patient: ${selectedAppointment?.patientId?.name || 'Patient'}`, 15, 42);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Attending Doctor: ${user?.name || 'Doctor'}`, 15, 50);
-    doc.text(`Date: ${selectedAppointment?.appointmentDate || new Date().toISOString().split('T')[0]}`, 15, 58);
-    doc.text(`Clinical Diagnosis: ${rxDiagnosis}`, 15, 66);
-
-    doc.setDrawColor(203, 213, 225);
-    doc.line(15, 74, 195, 74);
-
-    doc.setFont('helvetica', 'bold');
-    doc.text('Rx - Prescribed Medications:', 15, 84);
-
-    let yPos = 94;
-    rxMedicines.forEach((m, idx) => {
-      if (m.name) {
-        doc.setFont('helvetica', 'bold');
-        doc.text(`${idx + 1}. ${m.name} ${m.dosage ? `(${m.dosage})` : ''}`, 20, yPos);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Dosage & Regimen: ${m.frequency || 'As directed'} | Duration: ${m.duration || 'N/A'}`, 25, yPos + 6);
-        yPos += 16;
-      }
-    });
-
-    if (rxNotes) {
-      doc.setFont('helvetica', 'bold');
-      doc.text('Doctor Notes / Dietary Advice:', 15, yPos + 6);
-      doc.setFont('helvetica', 'normal');
-      doc.text(rxNotes, 20, yPos + 14);
-    }
-
-    doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139);
-    doc.text('Digitally signed and cryptographically verified on CareConnect EHR.', 15, 275);
-
-    doc.save(`Prescription_${selectedAppointment?._id || 'Apt'}.pdf`);
-    setIsPrescriptionModalOpen(false);
-
-    // Also mark appointment as completed
-    if (selectedAppointment) {
-      handleUpdateStatus(selectedAppointment._id, 'COMPLETED');
-    }
-  };
-
-  const filteredAppointments = appointments.filter(apt => {
-    if (activeTab === 'ALL') return true;
-    if (activeTab === 'UPCOMING') return apt.status === 'SCHEDULED' || apt.status === 'CONFIRMED';
-    if (activeTab === 'COMPLETED') return apt.status === 'COMPLETED';
-    if (activeTab === 'CANCELLED') return apt.status === 'CANCELLED';
+  const filteredAppointments = appointments.filter((apt) => {
+    const s = (apt.status || '').toLowerCase();
+    if (activeTab === 'all')       return true;
+    if (activeTab === 'upcoming')  return s === 'confirmed';
+    if (activeTab === 'pending')   return s === 'pending';
+    if (activeTab === 'completed') return s === 'completed';
+    if (activeTab === 'cancelled') return s === 'cancelled' || s === 'rejected';
     return true;
   });
 
+  // ── Update status (Doctor only) ───────────────────────────────────────────────
+  const handleUpdateStatus = async (id, newStatus) => {
+    try {
+      await appointmentService.updateStatus(id, { status: newStatus });
+      setAppointments((prev) =>
+        prev.map((a) => (a._id === id ? { ...a, status: newStatus } : a))
+      );
+      toast.success(`Appointment marked as ${newStatus}.`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update status.');
+    }
+  };
+
+  // ── Cancel (Patient only) ─────────────────────────────────────────────────────
+  const handleCancel = async (id) => {
+    setCancellingId(id);
+    try {
+      await appointmentService.cancel(id, { cancelReason: 'Cancelled by patient' });
+      setAppointments((prev) =>
+        prev.map((a) => (a._id === id ? { ...a, status: 'cancelled' } : a))
+      );
+      toast.success('Appointment cancelled.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to cancel appointment.');
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  // ── Prescription PDF ──────────────────────────────────────────────────────────
+  const openPrescriptionModal = (apt) => {
+    setSelectedApt(apt);
+    setRxDiagnosis('');
+    setRxMedicines([{ name: '', dosage: '', frequency: '', duration: '' }]);
+    setRxNotes('');
+    setPrescriptionModal(true);
+  };
+
+  const handleGeneratePrescription = (e) => {
+    e.preventDefault();
+    if (!rxDiagnosis.trim()) { toast.error('Please enter a diagnosis.'); return; }
+    setRxLoading(true);
+
+    try {
+      const doc = new jsPDF();
+      // Header
+      doc.setFillColor(22, 163, 74);
+      doc.rect(0, 0, 210, 30, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16); doc.setFont('helvetica', 'bold');
+      doc.text('CareConnect Healthcare Platform', 15, 19);
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+      doc.text('Official Digital Prescription', 148, 19);
+
+      // Patient Info
+      const patientName = selectedApt?.patient?.fullName || selectedApt?.patient?.name || 'Patient';
+      const doctorName = user?.fullName || user?.name || 'Doctor';
+      const aptDate = selectedApt?.date ? formatDate(selectedApt.date) : new Date().toLocaleDateString();
+
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(11); doc.setFont('helvetica', 'bold');
+      doc.text(`Patient: ${patientName}`, 15, 44);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Prescribing Doctor: Dr. ${doctorName}`, 15, 52);
+      doc.text(`Date: ${aptDate}  |  Time: ${selectedApt?.timeSlot || '—'}`, 15, 60);
+      doc.text(`Clinical Diagnosis: ${rxDiagnosis}`, 15, 68);
+
+      doc.setDrawColor(203, 213, 225);
+      doc.line(15, 76, 195, 76);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('Rx — Prescribed Medications:', 15, 86);
+
+      let yPos = 96;
+      rxMedicines.forEach((m, idx) => {
+        if (m.name) {
+          doc.setFont('helvetica', 'bold');
+          doc.text(`${idx + 1}. ${m.name}${m.dosage ? ` (${m.dosage})` : ''}`, 20, yPos);
+          doc.setFont('helvetica', 'normal');
+          doc.text(`Instructions: ${m.frequency || 'As directed'} | Duration: ${m.duration || 'N/A'}`, 25, yPos + 7);
+          yPos += 18;
+        }
+      });
+
+      if (rxNotes) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Doctor Notes / Dietary Advice:', 15, yPos + 6);
+        doc.setFont('helvetica', 'normal');
+        const splitNotes = doc.splitTextToSize(rxNotes, 175);
+        doc.text(splitNotes, 20, yPos + 14);
+      }
+
+      doc.setFontSize(8); doc.setTextColor(100, 116, 139);
+      doc.text('Digitally generated & authenticated via CareConnect Healthcare EHR Platform.', 15, 278);
+
+      doc.save(`Prescription_${selectedApt?._id || 'Apt'}.pdf`);
+
+      // Mark as completed after issuing prescription
+      if (selectedApt) {
+        handleUpdateStatus(selectedApt._id, 'completed');
+      }
+      setPrescriptionModal(false);
+      toast.success('Prescription generated & appointment completed.');
+    } catch {
+      toast.error('Failed to generate prescription.');
+    } finally {
+      setRxLoading(false);
+    }
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      
-      {/* Header */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+      {/* ── Header ─────────────────────────────────────────────────────────────── */}
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
             {isDoctor ? 'Practitioner Schedule' : 'My Care Appointments'}
           </span>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-0.5">
-            {isDoctor ? 'Patient Appointment Queue' : 'My Scheduled Consultations'}
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">
+            {isDoctor ? 'Patient Appointment Queue' : 'My Consultations'}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Manage your schedule, video calls, cancellations, and clinical prescriptions
+          <p className="text-xs text-slate-500 mt-1">
+            {isDoctor
+              ? 'Review, confirm, reject, and manage patient bookings.'
+              : 'Track your upcoming and past doctor consultations.'}
           </p>
         </div>
 
-        {!isDoctor && (
-          <Button
-            variant="primary"
-            size="md"
-            onClick={() => navigate('/doctors')}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-4 rounded-xl text-xs"
-          >
-            Book Another Doctor
-          </Button>
-        )}
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200 text-xs font-semibold gap-6">
-        {[
-          { key: 'ALL', label: 'All Appointments' },
-          { key: 'UPCOMING', label: 'Upcoming & Confirmed' },
-          { key: 'COMPLETED', label: 'Completed' },
-          { key: 'CANCELLED', label: 'Cancelled' },
-        ].map((tab) => (
+        <div className="flex gap-2">
           <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            className={`pb-3 border-b-2 transition-colors ${
-              activeTab === tab.key
-                ? 'border-emerald-600 text-emerald-700'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
+            onClick={fetchAppointments}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl transition-colors"
           >
-            {tab.label}
+            <RefreshCw className="h-3.5 w-3.5" />
+            Refresh
           </button>
-        ))}
+
+          {/* "Book a Doctor" — ONLY for patients, NEVER for doctors */}
+          {!isDoctor && (
+            <button
+              onClick={() => navigate('/doctors')}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl transition-colors shadow-sm"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Book a Doctor
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Appointments List */}
-      {loading ? (
-        <LoadingSpinner fullPage={false} text="Loading appointments..." />
-      ) : filteredAppointments.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center">
-          <Calendar className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-          <h3 className="text-base font-semibold text-slate-800">No appointments found</h3>
-          <p className="text-xs text-slate-500 mt-1">You don't have any appointments under this tab.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredAppointments.map((apt) => (
-            <div
-              key={apt._id}
-              className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-6 hover:border-slate-300 transition-all space-y-4"
-            >
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                
-                {/* Person Information (Doctor view shows Patient, Patient view shows Doctor) */}
-                <div className="flex items-start gap-3.5">
-                  <div className="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">
-                    {isDoctor ? <User className="h-6 w-6" /> : <Stethoscope className="h-6 w-6" />}
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">
-                      {isDoctor
-                        ? apt.patientId?.name || 'Patient'
-                        : apt.doctorId?.name || 'Dr. Specialist'}
-                    </h3>
-                    <p className="text-xs text-emerald-700 font-medium">
-                      {isDoctor
-                        ? `Patient Contact: ${apt.patientId?.phone || 'On File'}`
-                        : apt.doctorId?.specialization || 'Healthcare Specialist'}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-1">
-                      <span className="flex items-center gap-1 font-semibold text-slate-700">
-                        <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                        {apt.appointmentDate}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5 text-slate-400" />
-                        {apt.appointmentTime}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        {apt.appointmentType === 'VIDEO' ? <Video className="h-3.5 w-3.5 text-emerald-600" /> : <Building className="h-3.5 w-3.5 text-slate-500" />}
-                        {apt.appointmentType === 'VIDEO' ? 'Online Video' : 'In-Clinic'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Status Badge & Actions */}
-                <div className="flex items-center gap-3">
-                  <StatusBadge status={apt.status} />
-                </div>
-              </div>
-
-              {/* Reason & Symptoms */}
-              <div className="p-3 bg-slate-50 rounded-xl text-xs text-slate-600 space-y-1">
-                <p><span className="font-semibold text-slate-800">Reason:</span> {apt.reason}</p>
-                {apt.symptoms && (
-                  <p><span className="font-semibold text-slate-800">Symptoms:</span> {apt.symptoms}</p>
-                )}
-              </div>
-
-              {/* Action Buttons depending on role and status */}
-              <div className="pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate('/chat')}
-                    className="text-xs py-1.5 px-3 rounded-lg flex items-center gap-1.5 text-slate-700"
-                  >
-                    <MessageSquare className="h-3.5 w-3.5 text-emerald-600" />
-                    Open Chat
-                  </Button>
-
-                  {apt.appointmentType === 'VIDEO' && apt.status !== 'CANCELLED' && (
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={() => alert(`Starting video consultation for appointment #${apt._id}. In production, this launches WebRTC video room.`)}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-1.5 px-3 rounded-lg flex items-center gap-1.5"
-                    >
-                      <Video className="h-3.5 w-3.5" />
-                      Join Video Call
-                    </Button>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  {/* Doctor Actions */}
-                  {isDoctor && apt.status !== 'CANCELLED' && apt.status !== 'COMPLETED' && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedAppointment(apt);
-                          setIsPrescriptionModalOpen(true);
-                        }}
-                        className="bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100 text-xs py-1.5 px-3 rounded-lg flex items-center gap-1.5 font-medium"
-                      >
-                        <FileText className="h-3.5 w-3.5" />
-                        Issue Prescription
-                      </Button>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleUpdateStatus(apt._id, 'COMPLETED')}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs py-1.5 px-3 rounded-lg font-medium"
-                      >
-                        Complete Visit
-                      </Button>
-                    </>
-                  )}
-
-                  {/* Cancel Action if scheduled */}
-                  {(apt.status === 'SCHEDULED' || apt.status === 'CONFIRMED') && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleUpdateStatus(apt._id, 'CANCELLED')}
-                      className="text-rose-600 hover:bg-rose-50 text-xs py-1.5 px-3 rounded-lg font-medium"
-                    >
-                      Cancel Appointment
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-            </div>
-          ))}
+      {/* ── Error ──────────────────────────────────────────────────────────────── */}
+      {error && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
         </div>
       )}
 
-      {/* Doctor Prescription Creation Modal */}
+      {/* ── Tabs ───────────────────────────────────────────────────────────────── */}
+      <div className="flex gap-1 overflow-x-auto pb-1 border-b border-slate-200">
+        {tabs.map((tab) => {
+          const count = tab.key === 'all'
+            ? appointments.length
+            : appointments.filter((a) => {
+                const s = (a.status || '').toLowerCase();
+                if (tab.key === 'upcoming')  return s === 'confirmed';
+                if (tab.key === 'cancelled') return s === 'cancelled' || s === 'rejected';
+                return s === tab.key;
+              }).length;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={`whitespace-nowrap pb-3 px-1 mr-4 text-xs font-semibold border-b-2 transition-colors ${
+                activeTab === tab.key
+                  ? 'border-emerald-600 text-emerald-700'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              {tab.label}
+              <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                activeTab === tab.key ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'
+              }`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Appointment Cards ───────────────────────────────────────────────────── */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-7 w-7 text-emerald-600 animate-spin" />
+          <span className="ml-3 text-sm text-slate-500">Loading appointments...</span>
+        </div>
+      ) : filteredAppointments.length === 0 ? (
+        <EmptyState isDoctor={isDoctor} />
+      ) : (
+        <div className="space-y-4">
+          {filteredAppointments.map((apt) => {
+            const status = (apt.status || '').toLowerCase();
+
+            // Person to display changes by role
+            const otherPerson = isDoctor
+              ? (apt.patient?.fullName || apt.patient?.name || 'Patient')
+              : (apt.doctor?.fullName || apt.doctor?.name || 'Doctor');
+
+            const otherSub = isDoctor
+              ? `Phone: ${apt.patient?.phone || 'On File'}`
+              : (apt.doctor?.specialization || 'Healthcare Specialist');
+
+            const canCancel = !isDoctor && (status === 'pending' || status === 'confirmed');
+            const canDoctorAct = isDoctor && status !== 'cancelled' && status !== 'completed' && status !== 'rejected';
+
+            return (
+              <div
+                key={apt._id}
+                className="bg-white rounded-2xl border border-slate-200/90 shadow-xs p-5 hover:border-slate-300 transition-all"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+
+                  {/* Person Info */}
+                  <div className="flex items-start gap-3.5">
+                    <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">
+                      {isDoctor
+                        ? <User className="h-5 w-5" />
+                        : <Stethoscope className="h-5 w-5" />}
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">
+                        {isDoctor ? otherPerson : `Dr. ${otherPerson}`}
+                      </h3>
+                      <p className="text-xs text-emerald-700 font-medium">{otherSub}</p>
+                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-1.5">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                          <span className="font-medium text-slate-700">{formatDate(apt.date)}</span>
+                        </span>
+                        {apt.timeSlot && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5 text-slate-400" />
+                            {apt.timeSlot}
+                          </span>
+                        )}
+                        {apt.type && (
+                          <span className="flex items-center gap-1">
+                            {apt.type === 'video'
+                              ? <Video className="h-3.5 w-3.5 text-emerald-600" />
+                              : <Building className="h-3.5 w-3.5 text-slate-500" />}
+                            {apt.type === 'video' ? 'Video Call' : 'In-Clinic'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <StatusBadge status={apt.status} />
+                </div>
+
+                {/* Reason */}
+                {apt.reason && (
+                  <div className="mt-3 px-3 py-2 bg-slate-50 rounded-xl text-xs text-slate-600">
+                    <span className="font-semibold text-slate-800">Reason:</span> {apt.reason}
+                  </div>
+                )}
+
+                {/* Cancel reason */}
+                {(status === 'cancelled' || status === 'rejected') && apt.cancelReason && (
+                  <div className="mt-2 px-3 py-2 bg-red-50 rounded-xl text-xs text-red-700">
+                    <span className="font-semibold">Reason:</span> {apt.cancelReason}
+                  </div>
+                )}
+
+                {/* Actions Row */}
+                <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                  {/* Left: Open Chat */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => navigate('/chat')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg transition-colors"
+                    >
+                      <MessageSquare className="h-3.5 w-3.5 text-emerald-600" />
+                      Open Chat
+                    </button>
+                  </div>
+
+                  {/* Right: Role-specific actions */}
+                  <div className="flex items-center gap-2">
+
+                    {/* ── DOCTOR ACTIONS ── */}
+                    {canDoctorAct && (
+                      <>
+                        {status === 'pending' && (
+                          <>
+                            <button
+                              onClick={() => handleUpdateStatus(apt._id, 'confirmed')}
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors"
+                            >
+                              <CheckCircle className="h-3.5 w-3.5" />
+                              Confirm
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(apt._id, 'rejected')}
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+                            >
+                              <XCircle className="h-3.5 w-3.5" />
+                              Reject
+                            </button>
+                          </>
+                        )}
+                        {status === 'confirmed' && (
+                          <>
+                            <button
+                              onClick={() => openPrescriptionModal(apt)}
+                              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors"
+                            >
+                              <FileText className="h-3.5 w-3.5" />
+                              Issue Prescription
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(apt._id, 'completed')}
+                              className="px-3 py-1.5 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-700 rounded-lg transition-colors"
+                            >
+                              Complete Visit
+                            </button>
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    {/* ── PATIENT ACTIONS ── */}
+                    {canCancel && (
+                      <button
+                        onClick={() => handleCancel(apt._id)}
+                        disabled={cancellingId === apt._id}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded-lg transition-colors disabled:opacity-60"
+                      >
+                        {cancellingId === apt._id
+                          ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          : <XCircle className="h-3.5 w-3.5" />}
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── Prescription Modal (Doctor only) ──────────────────────────────────── */}
       <Modal
-        isOpen={isPrescriptionModalOpen}
-        onClose={() => setIsPrescriptionModalOpen(false)}
+        isOpen={prescriptionModal}
+        onClose={() => setPrescriptionModal(false)}
         title="Issue Digital Prescription"
-        subtitle={`Patient: ${selectedAppointment?.patientId?.name || 'Patient'}`}
+        subtitle={`Patient: ${selectedApt?.patient?.fullName || selectedApt?.patient?.name || 'Patient'}`}
         maxWidth="max-w-2xl"
       >
-        <form onSubmit={handleSaveAndGeneratePrescription} className="space-y-4">
+        <form onSubmit={handleGeneratePrescription} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Diagnosis *
+              Diagnosis <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -428,54 +507,59 @@ export const AppointmentsPage = () => {
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-semibold text-slate-700">
-                Prescribed Medications
-              </label>
+              <label className="block text-xs font-semibold text-slate-700">Prescribed Medications</label>
               <button
                 type="button"
-                onClick={handleAddMedicineRow}
+                onClick={() => setRxMedicines([...rxMedicines, { name: '', dosage: '', frequency: '', duration: '' }])}
                 className="text-xs text-emerald-600 font-semibold hover:underline"
               >
                 + Add Medicine
               </button>
             </div>
-
-            <div className="space-y-2.5">
-              {rxMedicines.map((med, index) => (
-                <div key={index} className="grid grid-cols-12 gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+            <div className="space-y-2">
+              {rxMedicines.map((med, idx) => (
+                <div key={idx} className="grid grid-cols-12 gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
                   <div className="col-span-4">
                     <input
                       type="text"
-                      placeholder="Medicine name (e.g. Amoxicillin)"
+                      placeholder="Medicine name"
                       value={med.name}
-                      onChange={(e) => handleMedicineChange(index, 'name', e.target.value)}
+                      onChange={(e) => {
+                        const u = [...rxMedicines]; u[idx].name = e.target.value; setRxMedicines(u);
+                      }}
                       className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs"
                     />
                   </div>
                   <div className="col-span-2">
                     <input
                       type="text"
-                      placeholder="Dosage (500mg)"
+                      placeholder="Dosage"
                       value={med.dosage}
-                      onChange={(e) => handleMedicineChange(index, 'dosage', e.target.value)}
+                      onChange={(e) => {
+                        const u = [...rxMedicines]; u[idx].dosage = e.target.value; setRxMedicines(u);
+                      }}
                       className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs"
                     />
                   </div>
                   <div className="col-span-3">
                     <input
                       type="text"
-                      placeholder="Freq (Twice daily)"
+                      placeholder="Frequency"
                       value={med.frequency}
-                      onChange={(e) => handleMedicineChange(index, 'frequency', e.target.value)}
+                      onChange={(e) => {
+                        const u = [...rxMedicines]; u[idx].frequency = e.target.value; setRxMedicines(u);
+                      }}
                       className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs"
                     />
                   </div>
                   <div className="col-span-3">
                     <input
                       type="text"
-                      placeholder="Duration (7 days)"
+                      placeholder="Duration"
                       value={med.duration}
-                      onChange={(e) => handleMedicineChange(index, 'duration', e.target.value)}
+                      onChange={(e) => {
+                        const u = [...rxMedicines]; u[idx].duration = e.target.value; setRxMedicines(u);
+                      }}
                       className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded text-xs"
                     />
                   </div>
@@ -486,33 +570,35 @@ export const AppointmentsPage = () => {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Instructions & Dietary Advice (Optional)
+              Instructions &amp; Dietary Advice (Optional)
             </label>
             <textarea
               rows={2}
               value={rxNotes}
               onChange={(e) => setRxNotes(e.target.value)}
-              placeholder="Take with meals, hydrate well, avoid strenuous exercise..."
+              placeholder="Take with meals, avoid direct sunlight, drink plenty of water..."
               className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 resize-none"
             />
           </div>
 
           <div className="pt-2 flex justify-end gap-3">
-            <Button
+            <button
               type="button"
-              variant="outline"
-              onClick={() => setIsPrescriptionModalOpen(false)}
-              className="py-2 text-xs"
+              onClick={() => setPrescriptionModal(false)}
+              className="px-4 py-2 text-xs font-medium border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg"
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               type="submit"
-              variant="primary"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 text-xs rounded-lg flex items-center gap-1.5"
+              disabled={rxLoading}
+              className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg disabled:opacity-60"
             >
-              <Download className="h-3.5 w-3.5" /> Save & Generate Prescription PDF
-            </Button>
+              {rxLoading
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <Download className="h-3.5 w-3.5" />}
+              Generate Prescription PDF
+            </button>
           </div>
         </form>
       </Modal>

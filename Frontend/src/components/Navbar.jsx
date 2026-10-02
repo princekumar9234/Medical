@@ -1,19 +1,21 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  Heart, 
-  Calendar, 
-  Search, 
-  Pill, 
-  Bell, 
-  MessageSquare, 
-  User, 
-  LogOut, 
-  ChevronDown, 
-  Menu, 
+import {
+  Heart,
+  Calendar,
+  Search,
+  Pill,
+  Bell,
+  MessageSquare,
+  User,
+  LogOut,
+  ChevronDown,
+  Menu,
   X,
   Stethoscope,
-  Activity
+  Activity,
+  Users,
+  LayoutDashboard,
 } from 'lucide-react';
 import { useAuth } from '../features/auth/Auth.context';
 import { notificationService } from '../features/notifications/notification.service';
@@ -31,6 +33,11 @@ export const Navbar = () => {
 
   const profileRef = useRef(null);
   const notifRef = useRef(null);
+
+  // Role helpers — always compare lowercase (User model stores 'doctor'/'patient')
+  const userRole = (user?.role || '').toLowerCase();
+  const isDoctorUser = userRole === 'doctor';
+  const isPatientUser = userRole === 'patient';
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -65,18 +72,25 @@ export const Navbar = () => {
 
   const getDashboardLink = () => {
     if (!user) return '/login';
-    if (user.role === 'DOCTOR') return '/doctor/dashboard';
-    if (user.role === 'ADMIN') return '/admin/dashboard';
-    return '/patient/dashboard';
+    return isDoctorUser ? '/doctor/dashboard' : '/patient/dashboard';
   };
 
-  const isActive = (path) => location.pathname === path;
+  const getProfileLink = () => {
+    if (!user) return '/login';
+    return isDoctorUser ? '/doctor/profile' : '/patient/profile';
+  };
+
+  const isActive = (path) =>
+    location.pathname === path || location.pathname.startsWith(path + '/');
+
+  const displayName = user?.fullName || user?.name || 'User';
+  const displayRole = isDoctorUser ? 'Doctor' : isPatientUser ? 'Patient' : '';
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          
+
           {/* Logo */}
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-2.5 group">
@@ -93,28 +107,35 @@ export const Navbar = () => {
               </div>
             </Link>
 
-            {/* Desktop Navigation Links */}
+            {/* Desktop Navigation — ROLE-BASED */}
             <nav className="hidden md:flex items-center gap-1">
-              <Link
-                to="/doctors"
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isActive('/doctors')
-                    ? 'text-emerald-700 bg-emerald-50'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                Find Doctors
-              </Link>
-              <Link
-                to="/medicines"
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  isActive('/medicines')
-                    ? 'text-emerald-700 bg-emerald-50'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                Medicines & Pharmacy
-              </Link>
+              {/* ── PATIENT NAV ── */}
+              {(!isAuthenticated || isPatientUser) && (
+                <>
+                  <Link
+                    to="/doctors"
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/doctors')
+                        ? 'text-emerald-700 bg-emerald-50'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Find Doctors
+                  </Link>
+                  <Link
+                    to="/medicines"
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive('/medicines')
+                        ? 'text-emerald-700 bg-emerald-50'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    }`}
+                  >
+                    Medicines &amp; Pharmacy
+                  </Link>
+                </>
+              )}
+
+              {/* ── Authenticated-only links ── */}
               {isAuthenticated && (
                 <>
                   <Link
@@ -172,7 +193,6 @@ export const Navbar = () => {
                     )}
                   </button>
 
-                  {/* Dropdown */}
                   {notificationsOpen && (
                     <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50 animate-in fade-in">
                       <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
@@ -210,36 +230,41 @@ export const Navbar = () => {
                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                     className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors"
                   >
-                    <div className="h-8 w-8 rounded-lg bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs">
-                      {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+                    <div className={`h-8 w-8 rounded-lg font-bold flex items-center justify-center text-xs ${isDoctorUser ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-800'}`}>
+                      {displayName.charAt(0).toUpperCase()}
                     </div>
                     <div className="text-left hidden lg:block">
                       <div className="text-xs font-semibold text-slate-800 leading-tight">
-                        {user?.name}
+                        {isDoctorUser ? `Dr. ${displayName}` : displayName}
                       </div>
                       <div className="text-[10px] text-slate-400 font-medium">
-                        {user?.role === 'DOCTOR' ? 'Doctor' : 'Patient'}
+                        {displayRole}
                       </div>
                     </div>
                     <ChevronDown className="h-4 w-4 text-slate-400" />
                   </button>
 
-                  {/* Profile Menu */}
+                  {/* Profile Dropdown */}
                   {profileDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 z-50 animate-in fade-in">
                       <div className="px-4 py-2 border-b border-slate-100">
-                        <p className="text-xs font-semibold text-slate-800">{user?.name}</p>
+                        <p className="text-xs font-semibold text-slate-800">
+                          {isDoctorUser ? `Dr. ${displayName}` : displayName}
+                        </p>
                         <p className="text-[11px] text-slate-400 truncate">{user?.email}</p>
+                        <span className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${isDoctorUser ? 'bg-emerald-50 text-emerald-700' : 'bg-sky-50 text-sky-700'}`}>
+                          {displayRole}
+                        </span>
                       </div>
                       <Link
-                        to={user?.role === 'DOCTOR' ? '/doctor/profile' : '/patient/profile'}
+                        to={getProfileLink()}
                         onClick={() => setProfileDropdownOpen(false)}
                         className="flex items-center gap-2 px-4 py-2 text-xs text-slate-700 hover:bg-slate-50"
                       >
                         <User className="h-4 w-4 text-slate-400" />
                         My Profile
                       </Link>
-                      {user?.role === 'DOCTOR' && (
+                      {isDoctorUser && (
                         <Link
                           to="/doctor/availability"
                           onClick={() => setProfileDropdownOpen(false)}
@@ -279,7 +304,7 @@ export const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile menu hamburger button */}
+          {/* Mobile hamburger */}
           <div className="flex md:hidden items-center gap-2">
             <button
               type="button"
@@ -295,21 +320,26 @@ export const Navbar = () => {
 
       {/* Mobile Menu Panel */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-3">
-          <Link
-            to="/doctors"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Find Doctors
-          </Link>
-          <Link
-            to="/medicines"
-            onClick={() => setMobileMenuOpen(false)}
-            className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Medicines & Pharmacy
-          </Link>
+        <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-1">
+          {/* Patient-only */}
+          {(!isAuthenticated || isPatientUser) && (
+            <>
+              <Link
+                to="/doctors"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Find Doctors
+              </Link>
+              <Link
+                to="/medicines"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Medicines &amp; Pharmacy
+              </Link>
+            </>
+          )}
 
           {isAuthenticated ? (
             <>
@@ -334,8 +364,20 @@ export const Navbar = () => {
               >
                 Messages
               </Link>
+              <Link
+                to={getProfileLink()}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Profile
+              </Link>
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-800">{user?.name}</span>
+                <div>
+                  <p className="text-xs font-semibold text-slate-800">
+                    {isDoctorUser ? `Dr. ${displayName}` : displayName}
+                  </p>
+                  <p className="text-[11px] text-slate-400">{displayRole}</p>
+                </div>
                 <button
                   type="button"
                   onClick={handleLogout}

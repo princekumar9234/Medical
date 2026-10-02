@@ -18,7 +18,8 @@ export const LoginPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState('');
 
-  const from = location.state?.from?.pathname || (formData.role === 'DOCTOR' ? '/doctor/dashboard' : '/patient/dashboard');
+  // Do NOT use location.state.from to override role-based redirect.
+  // Always redirect based on actual role returned by backend.
 
   const handleChange = (e) => {
     if (localError) setLocalError('');
@@ -38,8 +39,11 @@ export const LoginPage = () => {
     setIsLoading(false);
 
     if (result.success) {
-      const redirectPath = result.user?.role === 'DOCTOR' ? '/doctor/dashboard' : '/patient/dashboard';
-      navigate(location.state?.from?.pathname || redirectPath, { replace: true });
+      // Always redirect based on the authenticated role from the backend.
+      // Never trust frontend formData.role — only use result.user.role.
+      const roleFromBackend = (result.user?.role || '').toLowerCase();
+      const redirectPath = roleFromBackend === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard';
+      navigate(redirectPath, { replace: true });
     } else {
       setLocalError(result.message || 'Login failed. Please check your credentials.');
     }

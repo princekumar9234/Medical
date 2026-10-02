@@ -12,6 +12,7 @@ const doctorRoutes = require('./routes/doctor.routes');
 const patientRoutes = require('./routes/patient.routes');
 const appointmentRoutes = require('./routes/appointment.routes');
 const chatRoutes = require('./routes/chat.routes');
+const messageRoutes = require('./routes/message.routes');
 const medicineRoutes = require('./routes/medicine.routes');
 const notificationRoutes = require('./routes/notification.routes');
 
@@ -82,7 +83,9 @@ app.use('/api/doctors', doctorRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/messages', messageRoutes);
 app.use('/api/medicine', medicineRoutes);
+app.use('/api/medicines', medicineRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 // Health check

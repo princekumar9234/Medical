@@ -13,15 +13,24 @@ const register = async (req, res, next) => {
   try {
     const {
       fullName,
+      name,
       email,
       phone,
       password,
       role,
       specialization,
       qualification,
+      qualifications,
+      licenseNumber,
+      consultationFee,
+      experienceYears,
+      hospitalAffiliation,
       dateOfBirth,
       gender,
     } = req.body;
+
+    const actualFullName = (fullName || name || '').trim();
+    const actualRole = (role || 'patient').toLowerCase();
 
     // Check if user exists
     const existingUser = await User.findOne({ email });
@@ -29,37 +38,65 @@ const register = async (req, res, next) => {
       return errorResponse(res, 'An account with this email already exists.', 409);
     }
 
+    // Clean phone
+    const cleanPhone = phone && phone.trim() ? phone.trim() : undefined;
+
     // Create user
-    const user = new User({ fullName, email, phone, password, role });
+    const user = new User({
+      fullName: actualFullName,
+      email,
+      phone: cleanPhone,
+      password,
+      role: actualRole,
+    });
     const verificationToken = user.generateEmailVerificationToken();
     await user.save();
 
     // Create role-specific profile
-    if (role === 'doctor') {
+    if (actualRole === 'doctor') {
       await DoctorProfile.create({
         user: user._id,
         specialization: specialization || 'General Medicine',
-        qualifications: qualification || '',
+        qualifications: qualification || qualifications || 'MBBS / Medical Degree',
+        yearsOfExperience: Number(experienceYears) || 0,
+        consultationFee: Number(consultationFee) || 50,
+        registrationNumber: licenseNumber || `REG-${Math.floor(100000 + Math.random() * 900000)}`,
+        experience: hospitalAffiliation
+          ? [{ hospital: hospitalAffiliation, position: 'Practicing Physician', startYear: 2020, isCurrent: true }]
+          : [],
       });
     } else {
       await PatientProfile.create({
         user: user._id,
         dateOfBirth: dateOfBirth || null,
-        gender: gender || null,
+        gender: gender || 'Other',
       });
     }
 
     // Send verification email (don't fail registration if email fails)
     try {
-      await sendVerificationEmail(email, fullName, verificationToken);
+      await sendVerificationEmail(email, actualFullName, verificationToken);
     } catch (emailErr) {
       console.error('Email send failed:', emailErr.message);
     }
 
+    // Generate JWT token for immediate access
+    const token = generateToken(user._id, user.role, user.tokenVersion);
+
     return successResponse(
       res,
-      'Registration successful! Please check your email to verify your account.',
-      { email, role },
+      'Registration successful!',
+      {
+        token,
+        user: {
+          id: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+          isEmailVerified: user.isEmailVerified,
+          profilePhoto: user.profilePhoto,
+        },
+      },
       201
     );
   } catch (error) {

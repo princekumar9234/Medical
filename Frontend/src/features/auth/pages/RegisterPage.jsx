@@ -60,36 +60,45 @@ export const RegisterPage = () => {
 
     setIsLoading(true);
 
-    const payload = {
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      phone: formData.phone,
-      role: role,
-    };
+    try {
+      const cleanPhone = formData.phone && formData.phone.trim() ? formData.phone.trim() : undefined;
+      const payload = {
+        fullName: formData.name.trim(),
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        confirmPassword: formData.password,
+        phone: cleanPhone,
+        role: role.toLowerCase(),
+      };
 
-    if (role === 'DOCTOR') {
-      payload.specialization = formData.specialization;
-      payload.licenseNumber = formData.licenseNumber || `MD-${Math.floor(100000 + Math.random() * 900000)}`;
-      payload.consultationFee = Number(formData.consultationFee) || 50;
-      payload.experienceYears = Number(formData.experienceYears) || 3;
-      payload.hospitalAffiliation = formData.hospitalAffiliation;
-    }
+      if (role === 'DOCTOR') {
+        payload.specialization = formData.specialization || 'General Medicine';
+        payload.qualification = 'MBBS / Medical Degree';
+        payload.licenseNumber = formData.licenseNumber || `MD-${Math.floor(100000 + Math.random() * 900000)}`;
+        payload.consultationFee = Number(formData.consultationFee) || 50;
+        payload.experienceYears = Number(formData.experienceYears) || 3;
+        payload.hospitalAffiliation = formData.hospitalAffiliation;
+      }
 
-    const result = await registerUser(payload);
-    setIsLoading(false);
+      const result = await registerUser(payload);
 
-    if (result.success) {
-      setSuccess('Account created successfully! Redirecting...');
-      setTimeout(() => {
-        if (role === 'DOCTOR') {
-          navigate('/doctor/dashboard');
-        } else {
-          navigate('/patient/dashboard');
-        }
-      }, 1000);
-    } else {
-      setError(result.message || 'Registration failed. Please try again.');
+      if (result.success) {
+        setSuccess('Account created successfully! Redirecting...');
+        setTimeout(() => {
+          if (role === 'DOCTOR') {
+            navigate('/doctor/dashboard');
+          } else {
+            navigate('/patient/dashboard');
+          }
+        }, 1000);
+      } else {
+        setError(result.message || 'Registration failed. Please try again.');
+      }
+    } catch (err) {
+      setError(err?.message || 'Something went wrong during registration.');
+    } finally {
+      setIsLoading(false);
     }
   };
 

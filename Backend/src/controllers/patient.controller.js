@@ -22,46 +22,40 @@ const getMyProfile = async (req, res, next) => {
 
 // ─────────────────────────────────────────────
 // UPDATE MY PROFILE
+// ONLY allowed: fullName, phone, dateOfBirth
 // ─────────────────────────────────────────────
 const updateMyProfile = async (req, res, next) => {
   try {
-    const {
-      fullName, phone,
-      dateOfBirth, age, gender, bloodGroup,
-      address, city, state,
-      emergencyContactName, emergencyContactPhone,
-      allergies, chronicConditions, currentMedications,
-    } = req.body;
+    // ⚠️  STRICT: Only these three fields can be updated.
+    // Clinical data (blood group, gender, allergies, etc.) is read-only.
+    const { fullName, phone, dateOfBirth } = req.body;
 
-    await User.findByIdAndUpdate(req.user._id, {
-      ...(fullName && { fullName }),
-      ...(phone && { phone }),
-    });
+    // Update User record (name + phone only)
+    const userUpdate = {};
+    if (fullName && fullName.trim()) userUpdate.fullName = fullName.trim();
+    if (phone !== undefined) userUpdate.phone = phone.trim() || undefined;
+    if (Object.keys(userUpdate).length > 0) {
+      await User.findByIdAndUpdate(req.user._id, userUpdate);
+    }
 
-    const profile = await PatientProfile.findOneAndUpdate(
-      { user: req.user._id },
-      {
-        ...(dateOfBirth !== undefined && { dateOfBirth }),
-        ...(age !== undefined && { age: Number(age) }),
-        ...(gender && { gender }),
-        ...(bloodGroup && { bloodGroup }),
-        ...(address !== undefined && { address }),
-        ...(city !== undefined && { city }),
-        ...(state !== undefined && { state }),
-        ...(emergencyContactName !== undefined && { emergencyContactName }),
-        ...(emergencyContactPhone !== undefined && { emergencyContactPhone }),
-        ...(allergies && { allergies: Array.isArray(allergies) ? allergies : allergies.split(',').map(a => a.trim()) }),
-        ...(chronicConditions && { chronicConditions: Array.isArray(chronicConditions) ? chronicConditions : chronicConditions.split(',').map(a => a.trim()) }),
-        ...(currentMedications && { currentMedications: Array.isArray(currentMedications) ? currentMedications : currentMedications.split(',').map(a => a.trim()) }),
-      },
-      { new: true, runValidators: true }
-    );
+    // Update PatientProfile (dateOfBirth only)
+    let profile;
+    if (dateOfBirth !== undefined) {
+      profile = await PatientProfile.findOneAndUpdate(
+        { user: req.user._id },
+        { dateOfBirth },
+        { new: true, runValidators: true }
+      );
+    } else {
+      profile = await PatientProfile.findOne({ user: req.user._id });
+    }
 
-    return successResponse(res, 'Profile updated.', profile);
+    return successResponse(res, 'Profile updated successfully.', profile);
   } catch (err) {
     next(err);
   }
 };
+
 
 // ─────────────────────────────────────────────
 // UPLOAD PROFILE PHOTO

@@ -9,6 +9,7 @@ export const doctorService = {
   // Doctor's own profile
   getMyProfile: () => apiClient.get('/doctors/me/profile'),
   updateMyProfile: (data) => apiClient.put('/doctors/me/profile', data),
+  updateAvailability: (availability) => apiClient.put('/doctors/me/profile', { availability }),
   uploadPhoto: (formData) => apiClient.post('/doctors/me/photo', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
 
   // Experience

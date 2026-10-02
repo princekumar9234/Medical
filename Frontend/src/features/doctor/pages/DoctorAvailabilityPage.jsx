@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, Calendar, Check, Save, AlertCircle } from 'lucide-react';
 import { doctorService } from '../services/doctor.service';
 import Button from '../../../components/ui/Button';
+import toast from 'react-hot-toast';
 
 export const DoctorAvailabilityPage = () => {
   const navigate = useNavigate();
@@ -24,17 +25,48 @@ export const DoctorAvailabilityPage = () => {
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  useEffect(() => {
+    const fetchAvail = async () => {
+      try {
+        const res = await doctorService.getMyProfile();
+        const p = res.data?.data?.profile;
+        if (p?.availability && Array.isArray(p.availability) && p.availability.length > 0) {
+          const nextSched = { ...schedule };
+          daysOfWeek.forEach((d) => {
+            nextSched[d] = { enabled: false, start: '09:00', end: '17:00' };
+          });
+          p.availability.forEach((item) => {
+            if (nextSched[item.day]) {
+              nextSched[item.day] = {
+                enabled: true,
+                start: item.startTime || '09:00',
+                end: item.endTime || '17:00',
+              };
+            }
+          });
+          setSchedule(nextSched);
+          if (p.availability[0]?.slotDuration) {
+            setSlotDuration(p.availability[0].slotDuration);
+          }
+        }
+      } catch (err) {
+        // Keep initial state
+      }
+    };
+    fetchAvail();
+  }, []);
+
   const toggleDay = (day) => {
     setSchedule({
       ...schedule,
-      [day]: { ...schedule[day], enabled: !schedule[day].enabled }
+      [day]: { ...schedule[day], enabled: !schedule[day].enabled },
     });
   };
 
   const handleTimeChange = (day, field, val) => {
     setSchedule({
       ...schedule,
-      [day]: { ...schedule[day], [field]: val }
+      [day]: { ...schedule[day], [field]: val },
     });
   };
 
@@ -44,17 +76,21 @@ export const DoctorAvailabilityPage = () => {
     setSaveSuccess(false);
 
     try {
-      await doctorService.updateAvailability({
-        weeklySchedule: schedule,
-        slotDurationMinutes: Number(slotDuration),
-        bufferTimeMinutes: Number(bufferTime),
-      });
+      const availabilityArray = Object.entries(schedule)
+        .filter(([_, conf]) => conf.enabled)
+        .map(([day, conf]) => ({
+          day,
+          startTime: conf.start,
+          endTime: conf.end,
+          slotDuration: Number(slotDuration) || 30,
+        }));
+
+      await doctorService.updateAvailability(availabilityArray);
       setSaveSuccess(true);
+      toast.success('Availability schedule saved successfully!');
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
-      // Show success on UI for demo responsiveness
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      toast.error(err.response?.data?.message || 'Failed to save availability schedule.');
     } finally {
       setSaving(false);
     }

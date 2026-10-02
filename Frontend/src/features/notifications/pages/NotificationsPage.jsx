@@ -7,41 +7,14 @@ export const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const fallbackNotifications = [
-    {
-      _id: 'n-1',
-      title: 'Appointment Confirmed',
-      message: 'Your video consultation with Dr. Sarah Smith on Oct 4 at 10:30 AM is confirmed.',
-      read: false,
-      createdAt: '10 minutes ago',
-      type: 'APPOINTMENT',
-    },
-    {
-      _id: 'n-2',
-      title: 'Digital Prescription Available',
-      message: 'Dr. Sarah Smith uploaded your digital prescription for Acute Pharyngitis. PDF is ready.',
-      read: false,
-      createdAt: '2 hours ago',
-      type: 'PRESCRIPTION',
-    },
-    {
-      _id: 'n-3',
-      title: 'Health Reminder',
-      message: 'Please take your morning dosage of Amlodipine 5mg.',
-      read: true,
-      createdAt: 'Yesterday',
-      type: 'REMINDER',
-    },
-  ];
-
   const fetchNotifications = async () => {
     setLoading(true);
     try {
       const res = await notificationService.getAll();
       const list = res.data?.data?.notifications || [];
-      setNotifications(list.length > 0 ? list : fallbackNotifications);
+      setNotifications(list);
     } catch (err) {
-      setNotifications(fallbackNotifications);
+      setNotifications([]);
     } finally {
       setLoading(false);
     }

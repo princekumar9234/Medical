@@ -12,13 +12,18 @@ const {
 
 router.use(protect);
 
+// Conversation management
 router.post('/conversations', createOrGetConversation);
 router.get('/conversations', getUserConversations);
-router.get('/conversations/:otherUserId', createOrGetConversation);
+router.get('/conversations/:conversationId', getConversationMessages);
+router.patch('/conversations/:conversationId/read', markConversationRead);
+
+// Direct message creation & deletion
+router.post('/', sendMessage);
+router.delete('/:messageId', deleteMessage);
+
+// Backwards-compatible aliases
 router.get('/:conversationId/messages', getConversationMessages);
 router.post('/:conversationId/messages', sendMessage);
-router.post('/', sendMessage);
-router.patch('/conversations/:conversationId/read', markConversationRead);
-router.delete('/messages/:messageId', deleteMessage);
 
 module.exports = router;

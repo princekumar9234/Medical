@@ -11,6 +11,19 @@ const bookAppointment = async (req, res, next) => {
   try {
     const { doctorId, date, timeSlot, reason } = req.body;
 
+    // Only patients can book appointments with doctors
+    if (req.user.role !== 'patient') {
+      return errorResponse(
+        res,
+        'Doctors cannot book appointments. Only patients can schedule consultations with doctors.',
+        403
+      );
+    }
+
+    if (req.user._id.toString() === doctorId?.toString()) {
+      return errorResponse(res, 'You cannot book an appointment with yourself.', 400);
+    }
+
     const doctor = await User.findOne({ _id: doctorId, role: 'doctor' });
     if (!doctor) return errorResponse(res, 'Doctor not found.', 404);
 

@@ -1,5 +1,7 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
+const dns = require('dns');
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
 const bcrypt = require('bcryptjs');
 
 const User = require('./models/User');
@@ -9,7 +11,7 @@ const MedicineSearch = require('./models/MedicineSearch');
 
 const seedData = async () => {
   try {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/careconnect';
+    const mongoUri = process.env.MONGO_URI;
     await mongoose.connect(mongoUri);
     console.log('✅ Connected to MongoDB for seeding...');
 
@@ -25,133 +27,69 @@ const seedData = async () => {
 
     // 1. Create Doctors
     const docUser1 = await User.create({
-      name: 'Dr. Sarah Smith',
+      fullName: 'Dr. Sarah Smith',
       email: 'dr.sarah@careconnect.health',
       password: hashedPassword,
-      phone: '+1 (555) 234-5678',
-      role: 'DOCTOR',
+      phone: '9876543210',
+      role: 'doctor',
       isVerified: true,
     });
 
     await DoctorProfile.create({
-      userId: docUser1._id,
+      user: docUser1._id,
       specialization: 'Cardiology',
-      licenseNumber: 'MD-NY-84920',
+      qualifications: 'MD, Cardiology Fellowship',
+      yearsOfExperience: 12,
       consultationFee: 75,
-      experienceYears: 12,
-      hospitalAffiliation: 'Metro Heart Institute, New York',
       about: 'Board-certified Cardiologist specializing in preventive cardiology, hypertension management, echocardiography, and cardiovascular risk reduction.',
-      education: 'MD from Johns Hopkins University School of Medicine, Cardiology Fellowship at Mount Sinai Hospital',
-      averageRating: 4.9,
-      totalReviews: 142,
-      isAvailable: true,
-      profileImage: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400',
+      registrationNumber: 'MD-NY-84920',
+      education: [{ degree: 'MD', institution: 'Johns Hopkins University School of Medicine', year: 2008 }]
     });
 
     const docUser2 = await User.create({
-      name: 'Dr. Marcus Vance',
+      fullName: 'Dr. Marcus Vance',
       email: 'dr.marcus@careconnect.health',
       password: hashedPassword,
-      phone: '+1 (555) 345-6789',
-      role: 'DOCTOR',
+      phone: '9876543211',
+      role: 'doctor',
       isVerified: true,
     });
 
     await DoctorProfile.create({
-      userId: docUser2._id,
+      user: docUser2._id,
       specialization: 'General Medicine',
-      licenseNumber: 'MD-MA-31945',
+      qualifications: 'DO',
+      yearsOfExperience: 9,
       consultationFee: 50,
-      experienceYears: 9,
-      hospitalAffiliation: 'City Health Clinic, Boston',
       about: 'Dedicated primary care physician focused on family wellness, chronic lifestyle condition control, and preventive diagnostics.',
-      education: 'DO from Boston University School of Medicine',
-      averageRating: 4.8,
-      totalReviews: 98,
-      isAvailable: true,
-      profileImage: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400',
+      registrationNumber: 'MD-MA-31945',
+      education: [{ degree: 'DO', institution: 'Boston University School of Medicine', year: 2011 }]
     });
 
     // 2. Create Patients
     const patientUser1 = await User.create({
-      name: 'John Doe',
+      fullName: 'John Doe',
       email: 'patient.john@example.com',
       password: hashedPassword,
-      phone: '+1 (555) 392-1049',
-      role: 'PATIENT',
+      phone: '9876543212',
+      role: 'patient',
       isVerified: true,
     });
 
     await PatientProfile.create({
-      userId: patientUser1._id,
+      user: patientUser1._id,
       bloodGroup: 'O+',
       dateOfBirth: new Date('1992-06-15'),
       gender: 'Male',
-      emergencyContact: {
-        name: 'Jane Doe',
-        phone: '+1 (555) 883-9102',
-      },
+      emergencyContactName: 'Jane Doe',
+      emergencyContactPhone: '9876543213',
       allergies: ['Penicillin', 'Pollen'],
       chronicConditions: ['Mild Essential Hypertension'],
     });
 
-    // 3. Create Sample Medicines
-    const medicinesData = [
-      {
-        brandName: 'Amoxil',
-        genericName: 'Amoxicillin Trihydrate',
-        category: 'Antibiotics',
-        manufacturer: 'GlaxoSmithKline',
-        barcode: '8901086001234',
-        dosageForm: 'Oral Capsule 500mg',
-        prescriptionRequired: true,
-        indications: ['Bacterial respiratory tract infections', 'Otitis media', 'Skin infections'],
-        dosage: 'Adults: 250mg to 500mg every 8 hours or 500mg to 875mg every 12 hours.',
-        sideEffects: ['Nausea', 'Diarrhea', 'Skin rash'],
-        contraindications: ['Hypersensitivity to beta-lactam antibiotics'],
-      },
-      {
-        brandName: 'Lipitor',
-        genericName: 'Atorvastatin Calcium',
-        category: 'Cardiovascular / Statins',
-        manufacturer: 'Pfizer Inc.',
-        barcode: '8901086005678',
-        dosageForm: 'Oral Tablet 20mg',
-        prescriptionRequired: true,
-        indications: ['Hypercholesterolemia', 'Cardiovascular risk reduction'],
-        dosage: '10mg to 20mg once daily in evening.',
-        sideEffects: ['Muscle ache', 'Joint pain', 'Mild GI upset'],
-        contraindications: ['Active liver disease', 'Pregnancy'],
-      },
-      {
-        brandName: 'Glucophage',
-        genericName: 'Metformin Hydrochloride',
-        category: 'Antidiabetic Agents',
-        manufacturer: 'Merck Healthcare',
-        barcode: '8901086009876',
-        dosageForm: 'Extended Release Tablet 500mg',
-        prescriptionRequired: true,
-        indications: ['Type 2 Diabetes Mellitus glycemic control'],
-        dosage: '500mg once daily with evening meal.',
-        sideEffects: ['GI discomfort', 'Diarrhea', 'Metallic taste'],
-        contraindications: ['Severe renal impairment (eGFR < 30)'],
-      },
-      {
-        brandName: 'Tylenol',
-        genericName: 'Acetaminophen / Paracetamol',
-        category: 'Analgesics & Antipyretics',
-        manufacturer: 'Johnson & Johnson',
-        barcode: '8901086003412',
-        dosageForm: 'Oral Tablet 500mg',
-        prescriptionRequired: false,
-        indications: ['Mild to moderate pain', 'Fever reduction'],
-        dosage: '500mg to 1000mg every 4 to 6 hours as needed.',
-        sideEffects: ['Rare in therapeutic doses'],
-        contraindications: ['Severe hepatic impairment'],
-      }
-    ];
 
-    await MedicineSearch.insertMany(medicinesData);
+
+
 
     console.log('✅ Seed completed successfully!');
     console.log('----------------------------------------------------');
