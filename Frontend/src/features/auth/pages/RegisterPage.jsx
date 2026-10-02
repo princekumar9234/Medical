@@ -17,8 +17,8 @@ export const RegisterPage = () => {
     // Doctor specific fields
     specialization: 'General Medicine',
     licenseNumber: '',
-    consultationFee: '50',
-    experienceYears: '5',
+    consultationFee: '',
+    experienceYears: '',
     hospitalAffiliation: '',
   });
 

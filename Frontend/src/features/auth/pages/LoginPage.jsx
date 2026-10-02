@@ -49,23 +49,6 @@ export const LoginPage = () => {
     }
   };
 
-  // Quick Demo Accounts Fill for easy evaluation
-  const handleQuickFill = (role) => {
-    if (role === 'DOCTOR') {
-      setFormData({
-        email: 'dr.sarah@careconnect.health',
-        password: 'Password123!',
-        role: 'DOCTOR',
-      });
-    } else {
-      setFormData({
-        email: 'patient.john@example.com',
-        password: 'Password123!',
-        role: 'PATIENT',
-      });
-    }
-    setLocalError('');
-  };
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-slate-50">
@@ -170,29 +153,6 @@ export const LoginPage = () => {
                 </Button>
               </div>
             </form>
-
-            {/* Quick Demo Pre-fill for reviewer convenience */}
-            <div className="mt-6 pt-5 border-t border-slate-100">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 text-center mb-3">
-                Quick Demo Accounts
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('PATIENT')}
-                  className="text-xs py-1.5 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-md font-medium text-center transition-colors"
-                >
-                  Fill as Patient
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('DOCTOR')}
-                  className="text-xs py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-md font-medium text-center transition-colors"
-                >
-                  Fill as Doctor
-                </button>
-              </div>
-            </div>
 
             {/* Link to Registration */}
             <div className="mt-6 text-center text-xs text-slate-500">
