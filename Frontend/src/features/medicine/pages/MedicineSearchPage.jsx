@@ -372,33 +372,60 @@ export const MedicineSearchPage = () => {
 
       {/* Loading Barcode Search Banner */}
       {scannerLoading && (
-        <div className="bg-emerald-50 border border-emerald-200/90 rounded-2xl p-4 flex items-center gap-3 text-emerald-900 animate-pulse">
+        <div className="bg-emerald-50 border border-emerald-200/90 rounded-2xl p-4 flex items-center gap-3 text-emerald-900">
           <Loader2 className="h-5 w-5 text-emerald-600 animate-spin shrink-0" />
           <div className="text-xs sm:text-sm">
-            <strong>Finding medicine information...</strong> Querying verified pharmacology records and barcode registries.
+            <strong>Searching across multiple databases...</strong>
+            <span className="ml-1 text-emerald-700">Checking FDA, NIH RxNorm, UPC Registry & Open Food Facts simultaneously.</span>
           </div>
         </div>
       )}
 
       {/* Not Found Alert Banner */}
       {notFoundBarcode && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start justify-between gap-3 text-amber-900">
-          <div className="flex items-start gap-2.5 text-xs sm:text-sm">
-            <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold">Medicine information not found</p>
-              <p className="text-xs text-amber-800 mt-0.5">
-                No verified pharmaceutical record matched barcode <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-200">{notFoundBarcode}</code>. Always verify the packaging or consult a licensed pharmacist.
-              </p>
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-amber-900">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-sm">No record found for barcode <code className="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-200 text-amber-800">{notFoundBarcode}</code></p>
+                <p className="text-xs text-amber-700 mt-1">
+                  We searched across <strong>FDA Drug DB</strong>, <strong>NIH RxNorm</strong>, <strong>UPC Item Registry</strong>, and <strong>Open Food Facts</strong> — no matching pharmaceutical record was found.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setNotFoundBarcode(null)}
+              className="text-amber-400 hover:text-amber-700 p-1 rounded-lg shrink-0"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Suggestions */}
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="bg-white border border-amber-100 rounded-xl p-3">
+              <p className="text-xs font-semibold text-amber-800 mb-1">💡 Try Name Search</p>
+              <p className="text-xs text-amber-700">Enter the medicine name (brand or generic) in the left search box instead of barcode.</p>
+              <button
+                onClick={() => {
+                  setNotFoundBarcode(null);
+                  const nameInput = document.querySelector('input[placeholder*="brand or generic"]');
+                  if (nameInput) nameInput.focus();
+                }}
+                className="mt-2 text-xs text-emerald-700 font-semibold hover:underline"
+              >→ Search by Name</button>
+            </div>
+            <div className="bg-white border border-amber-100 rounded-xl p-3">
+              <p className="text-xs font-semibold text-amber-800 mb-1">📦 Check Barcode Format</p>
+              <p className="text-xs text-amber-700">Ensure the barcode is entered correctly. Indian barcodes usually start with <strong>890</strong> (EAN-13 format).</p>
+            </div>
+            <div className="bg-white border border-amber-100 rounded-xl p-3">
+              <p className="text-xs font-semibold text-amber-800 mb-1">🏥 Consult a Pharmacist</p>
+              <p className="text-xs text-amber-700">Some regional or hospital-specific medicines may not be in public databases. Always verify with a licensed pharmacist.</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setNotFoundBarcode(null)}
-            className="text-amber-500 hover:text-amber-700 p-1 rounded-lg"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
       )}
 
