@@ -3,6 +3,7 @@ const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const User = require('../models/User');
 const { successResponse, errorResponse } = require('../utils/response');
+const { createNotification } = require('../services/notification.service');
 
 // ─────────────────────────────────────────────
 // CREATE OR GET CONVERSATION (POST /api/messages/conversations)
@@ -286,13 +287,30 @@ const sendMessage = async (req, res, next) => {
       'fullName profilePhoto role'
     );
 
+    // ── Create notification for the receiver ──
+    const senderName = req.user.fullName || 'Someone';
+    const notification = await createNotification({
+      recipient: receiverParticipant.userId,
+      sender: req.user._id,
+      type: 'new_message',
+      title: `New message from ${senderName}`,
+      message: messageContent.trim().length > 80
+        ? messageContent.trim().substring(0, 80) + '...'
+        : messageContent.trim(),
+      data: {
+        conversationId,
+        messageId: message._id,
+        senderRole: req.user.role,
+      },
+    });
+
     // Emit real-time Socket.IO events to conversation room and receiver
     const io = req.app.get('io');
     if (io) {
       io.to(conversationId.toString()).emit('newMessage', populatedMessage);
       io.to(conversationId.toString()).emit('new_message', populatedMessage);
 
-      // Notify recipient's personal room for conversation list badge updates
+      // Notify recipient's personal room for conversation list badge + notification
       io.to(`user_${receiverParticipant.userId.toString()}`).emit('newMessage', populatedMessage);
       io.to(`user_${receiverParticipant.userId.toString()}`).emit('conversationUpdated', {
         conversationId,
@@ -300,6 +318,14 @@ const sendMessage = async (req, res, next) => {
         lastMessageAt: new Date(),
         senderId: req.user._id,
       });
+
+      // Emit notification event so frontend notification panel updates in real-time
+      if (notification) {
+        io.to(`user_${receiverParticipant.userId.toString()}`).emit('newNotification', {
+          ...notification.toObject(),
+          sender: { _id: req.user._id, fullName: senderName, profilePhoto: req.user.profilePhoto },
+        });
+      }
     }
 
     return successResponse(res, 'Message sent successfully.', populatedMessage, 201);

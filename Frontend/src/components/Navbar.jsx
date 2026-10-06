@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../features/auth/Auth.context';
 import { notificationService } from '../features/notifications/notification.service';
+import { getSocket } from '../services/socket';
 
 export const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -53,10 +54,10 @@ export const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch unread notifications if authenticated
+  // Fetch unread notifications on page change
   useEffect(() => {
     if (isAuthenticated) {
-      notificationService.getAll({ unreadOnly: true, limit: 5 })
+      notificationService.getAll({ unreadOnly: true, limit: 10 })
         .then((res) => {
           setNotifications(res.data?.data?.notifications || []);
           setUnreadCount(res.data?.data?.unreadCount || 0);
@@ -64,6 +65,28 @@ export const Navbar = () => {
         .catch(() => {});
     }
   }, [isAuthenticated, location.pathname]);
+
+  // Real-time: listen for new notifications via Socket.IO
+  useEffect(() => {
+    if (!isAuthenticated || !user?._id) return;
+
+    const socket = getSocket();
+    if (!socket) return;
+
+    // Join personal user room so backend can target this user
+    socket.emit('joinUserRoom', user._id);
+
+    const onNewNotification = (notif) => {
+      setNotifications((prev) => [notif, ...prev].slice(0, 10));
+      setUnreadCount((prev) => prev + 1);
+    };
+
+    socket.on('newNotification', onNewNotification);
+
+    return () => {
+      socket.off('newNotification', onNewNotification);
+    };
+  }, [isAuthenticated, user?._id]);
 
   const handleLogout = () => {
     logout();
