@@ -39,10 +39,13 @@ export const LoginPage = () => {
     setIsLoading(false);
 
     if (result.success) {
-      // Always redirect based on the authenticated role from the backend.
-      // Never trust frontend formData.role — only use result.user.role.
       const roleFromBackend = (result.user?.role || '').toLowerCase();
-      const redirectPath = roleFromBackend === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard';
+      const fromPath = location.state?.from?.pathname;
+      const fromSearch = location.state?.from?.search || '';
+      const hasFrom = roleFromBackend === 'patient' && fromPath && !fromPath.includes('/login') && !fromPath.includes('/register');
+      const redirectPath = hasFrom
+        ? `${fromPath}${fromSearch}`
+        : (roleFromBackend === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard');
       navigate(redirectPath, { replace: true });
     } else {
       setLocalError(result.message || 'Login failed. Please check your credentials.');
@@ -76,6 +79,13 @@ export const LoginPage = () => {
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-white py-8 px-6 shadow-sm border border-slate-200/90 rounded-2xl sm:px-10">
             
+            {location.state?.from && !localError && !authError && (
+              <div className="mb-5 rounded-lg bg-emerald-50 border border-emerald-200 p-3.5 flex items-start gap-2.5 text-xs text-emerald-800">
+                <AlertCircle className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+                <span>Please sign in to access doctor appointments, pharmacy, and medical features.</span>
+              </div>
+            )}
+
             {(localError || authError) && (
               <div className="mb-5 rounded-lg bg-rose-50 border border-rose-200 p-3.5 flex items-start gap-2.5 text-xs text-rose-700">
                 <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />

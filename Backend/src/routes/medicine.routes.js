@@ -11,11 +11,11 @@ const {
   deleteScanHistory,
 } = require('../controllers/medicine.controller');
 
-// Public / Guest accessible (attaches user if authenticated)
-router.get('/', getAllMedicinesController);
-router.get('/search', searchByNameController);
-router.post('/barcode', optionalAuth, searchByBarcodeController);
-router.get('/barcode', optionalAuth, searchByBarcodeController);
+// Protected medicine routes — requires authentication
+router.get('/', protect, getAllMedicinesController);
+router.get('/search', protect, searchByNameController);
+router.post('/barcode', protect, searchByBarcodeController);
+router.get('/barcode', protect, searchByBarcodeController);
 
 // Authenticated Patient Scan History routes
 router.post('/scan-history', protect, createScanHistory);

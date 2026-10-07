@@ -13,10 +13,10 @@ const {
   getAvailableSlots,
 } = require('../controllers/doctor.controller');
 
-// Public routes
-router.get('/search', searchDoctors);
-router.get('/:doctorId/profile', getPublicProfile);
-router.get('/:doctorId/slots', getAvailableSlots);
+// Protected search & profile routes — requires authentication
+router.get('/search', protect, searchDoctors);
+router.get('/:doctorId/profile', protect, getPublicProfile);
+router.get('/:doctorId/slots', protect, getAvailableSlots);
 
 // Protected doctor-only routes
 router.use(protect, authorize('doctor'));

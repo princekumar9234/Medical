@@ -133,7 +133,7 @@ export const Navbar = () => {
             {/* Desktop Navigation — ROLE-BASED */}
             <nav className="hidden md:flex items-center gap-1">
               {/* ── PATIENT NAV ── */}
-              {(!isAuthenticated || isPatientUser) && (
+              {isAuthenticated && isPatientUser && (
                 <>
                   <Link
                     to="/doctors"
@@ -360,7 +360,7 @@ export const Navbar = () => {
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-1">
           {/* Patient-only */}
-          {(!isAuthenticated || isPatientUser) && (
+          {isAuthenticated && isPatientUser && (
             <>
               <Link
                 to="/doctors"

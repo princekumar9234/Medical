@@ -47,10 +47,10 @@ export function App() {
               <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-              {/* Public info pages */}
-              <Route path="/doctors" element={<DoctorSearchPage />} />
-              <Route path="/doctors/:id" element={<DoctorPublicProfilePage />} />
-              <Route path="/medicines" element={<MedicineSearchPage />} />
+              {/* Protected info pages — login required */}
+              <Route path="/doctors" element={<ProtectedRoute><DoctorSearchPage /></ProtectedRoute>} />
+              <Route path="/doctors/:id" element={<ProtectedRoute><DoctorPublicProfilePage /></ProtectedRoute>} />
+              <Route path="/medicines" element={<ProtectedRoute><MedicineSearchPage /></ProtectedRoute>} />
 
               {/* ── Shared Protected Routes (any authenticated user) ──────── */}
               <Route

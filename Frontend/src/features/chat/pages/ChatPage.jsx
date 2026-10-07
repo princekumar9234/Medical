@@ -555,7 +555,7 @@ export const ChatPage = () => {
       )}
 
       {/* Main chat container */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden h-[720px] flex">
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden h-[calc(100vh-12rem)] sm:h-[680px] lg:h-[720px] flex">
 
         {/* ── LEFT SIDEBAR ─────────────────────────────────────────────────── */}
         <div
