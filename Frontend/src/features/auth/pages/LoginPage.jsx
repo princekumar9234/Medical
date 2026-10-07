@@ -51,8 +51,8 @@ export const LoginPage = () => {
 
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-slate-50">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col justify-center py-8 sm:py-12 px-4 sm:px-6 lg:px-8 bg-slate-50">
+      <div className="w-full mx-auto sm:max-w-md">
         
         {/* Brand Icon & Heading */}
         <div className="text-center">

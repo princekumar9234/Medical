@@ -217,7 +217,7 @@ export const Navbar = () => {
                   </button>
 
                   {notificationsOpen && (
-                    <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50 animate-in fade-in">
+                    <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 max-w-sm bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50 animate-in fade-in">
                       <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
                         <span className="text-sm font-semibold text-slate-800">Notifications</span>
                         <Link
@@ -327,11 +327,26 @@ export const Navbar = () => {
             )}
           </div>
 
-          {/* Mobile hamburger */}
-          <div className="flex md:hidden items-center gap-2">
+          {/* Mobile hamburger + notifications */}
+          <div className="flex md:hidden items-center gap-1">
+            {isAuthenticated && (
+              <button
+                type="button"
+                onClick={() => { setNotificationsOpen(!notificationsOpen); setMobileMenuOpen(false); }}
+                className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg relative"
+                aria-label="Notifications"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 h-3.5 min-w-3.5 px-0.5 rounded-full bg-emerald-600 text-[9px] font-bold text-white flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+            )}
             <button
               type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              onClick={() => { setMobileMenuOpen(!mobileMenuOpen); setNotificationsOpen(false); }}
               className="p-2 text-slate-600 hover:bg-slate-100 rounded-lg"
               aria-label="Toggle menu"
             >

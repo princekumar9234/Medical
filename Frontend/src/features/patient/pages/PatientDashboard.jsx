@@ -142,12 +142,12 @@ export const PatientDashboard = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
       {/* Welcome Banner */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-5 sm:p-8 flex flex-col gap-4">
         <div>
           <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
             Patient Portal
           </span>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-0.5">
+          <h1 className="text-xl sm:text-3xl font-bold text-slate-900 mt-0.5">
             Welcome back, {user?.fullName || user?.name || 'Patient'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
@@ -155,14 +155,14 @@ export const PatientDashboard = () => {
           </p>
         </div>
 
-        <div className="flex gap-3 flex-wrap">
+        <div className="flex gap-2 sm:gap-3 flex-wrap">
           <Link to="/doctors">
             <Button
               variant="primary"
               size="md"
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-4 rounded-xl text-xs flex items-center gap-2"
             >
-              <PlusCircle className="h-4 w-4" /> Book New Appointment
+              <PlusCircle className="h-4 w-4" /> Book Appointment
             </Button>
           </Link>
           <Link to="/medicines">

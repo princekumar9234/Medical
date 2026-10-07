@@ -214,21 +214,21 @@ export const DoctorSearchPage = () => {
               key={doctor._id}
               className="bg-white rounded-3xl border border-slate-200/90 shadow-xs hover:border-emerald-200 hover:shadow-sm transition-all p-6"
             >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex flex-col gap-4">
                 
                 {/* Doctor basic profile */}
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3 sm:gap-4">
                   <img
                     src={doctor.profileImage || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200'}
                     alt={doctor.name}
-                    className="h-20 w-20 rounded-2xl object-cover border border-slate-200 shrink-0"
+                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-cover border border-slate-200 shrink-0"
                   />
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-lg font-bold text-slate-900 leading-tight">
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
                         {doctor.name}
                       </h3>
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full shrink-0">
                         <CheckCircle className="h-3 w-3" /> Verified
                       </span>
                     </div>
@@ -237,51 +237,49 @@ export const DoctorSearchPage = () => {
                       {doctor.specialization}
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 pt-0.5">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 pt-0.5">
                       {doctor.hospitalAffiliation && (
                         <span className="flex items-center gap-1">
-                          <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                          {doctor.hospitalAffiliation}
+                          <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                          <span className="truncate max-w-[160px]">{doctor.hospitalAffiliation}</span>
                         </span>
                       )}
                       <span className="flex items-center gap-1">
                         <Clock className="h-3.5 w-3.5 text-slate-400" />
-                        {doctor.experienceYears || 0} Years Experience
+                        {doctor.experienceYears || 0} Yrs Exp
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-600 line-clamp-2 max-w-xl pt-1">
+                    <p className="text-xs text-slate-600 line-clamp-2 max-w-xl pt-1 hidden sm:block">
                       {doctor.about}
                     </p>
                   </div>
                 </div>
 
-                {/* Right side booking details & fees */}
-                <div className="flex md:flex-col items-center md:items-end justify-between md:justify-center border-t md:border-t-0 pt-4 md:pt-0 border-slate-100 shrink-0 md:min-w-[180px] gap-3">
-                  <div className="text-left md:text-right">
-                    <div className="flex items-center md:justify-end gap-1 text-sm font-bold text-slate-900">
+                {/* Right side booking details & fees — row on mobile, column on md+ */}
+                <div className="flex items-center justify-between border-t border-slate-100 pt-3 gap-3">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1 text-sm font-bold text-slate-900">
                       <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
                       <span>{doctor.averageRating || 4.9}</span>
-                      <span className="text-xs text-slate-400 font-normal">
-                        ({doctor.totalReviews || 0} reviews)
-                      </span>
+                      <span className="text-xs text-slate-400 font-normal">({doctor.totalReviews || 0})</span>
                     </div>
-                    <div className="mt-1">
-                      <span className="text-xs text-slate-400 font-normal">Consultation Fee</span>
-                      <p className="text-xl font-bold text-emerald-700">
+                    <div>
+                      <span className="text-xs text-slate-400 font-normal block">Fee</span>
+                      <p className="text-base font-bold text-emerald-700">
                         ${doctor.consultationFee || 50}
                       </p>
                     </div>
                   </div>
 
-                  <div className="flex gap-2 w-full md:w-auto">
+                  <div>
                     <Button
                       variant={isDoctor ? 'outline' : 'primary'}
                       size="sm"
                       onClick={() => navigate(`/doctors/${doctor._id || doctor.id}`)}
                       className={isDoctor
-                        ? 'border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-medium py-2 px-4 rounded-xl text-xs w-full'
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-xl text-xs w-full'
+                        ? 'border-emerald-600 text-emerald-700 hover:bg-emerald-50 font-medium py-2 px-4 rounded-xl text-xs'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-xl text-xs'
                       }
                     >
                       {isDoctor ? 'View Profile' : 'Book Visit'}

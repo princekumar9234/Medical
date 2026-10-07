@@ -229,7 +229,7 @@ export const DoctorDashboard = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
       {/* ── Welcome Banner ─────────────────────────────────────────────────────── */}
-      <div className="bg-gradient-to-br from-emerald-900 to-teal-800 rounded-3xl p-6 sm:p-8 text-white shadow-md">
+      <div className="bg-gradient-to-br from-emerald-900 to-teal-800 rounded-3xl p-5 sm:p-8 text-white shadow-md">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -239,10 +239,10 @@ export const DoctorDashboard = () => {
                 ● Active
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">
+            <h1 className="text-xl sm:text-3xl font-bold text-white">
               Welcome, Dr. {displayName}
             </h1>
-            <p className="text-sm text-emerald-300 mt-1">
+            <p className="text-xs sm:text-sm text-emerald-300 mt-1">
               {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
@@ -327,8 +327,8 @@ export const DoctorDashboard = () => {
                   </Link>
                 </div>
 
-                {/* Tab filters */}
-                <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit">
+                {/* Tab filters - scrollable on mobile */}
+                <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-full sm:w-fit overflow-x-auto">
                   {[
                     { key: 'pending',   label: `Pending (${pendingCount})` },
                     { key: 'confirmed', label: `Confirmed (${confirmedCount})` },

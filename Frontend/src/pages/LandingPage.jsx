@@ -91,24 +91,24 @@ export const LandingPage = () => {
   };
 
   return (
-    <div className="space-y-16 sm:space-y-24">
+    <div className="space-y-12 sm:space-y-16 sm:space-y-24">
       {/* ─── HERO SECTION ─── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50/50 via-white to-slate-50 pt-12 pb-16 lg:pt-20 lg:pb-24 border-b border-slate-200/60">
+      <section className="relative overflow-hidden bg-gradient-to-b from-emerald-50/50 via-white to-slate-50 pt-10 pb-12 lg:pt-20 lg:pb-24 border-b border-slate-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             
-            <div className="lg:col-span-7 space-y-6">
+            <div className="lg:col-span-7 space-y-5">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100/80 border border-emerald-200 text-emerald-800 text-xs font-semibold">
                 <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
                 Trusted by 50,000+ Patients Nationwide
               </div>
 
-              <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
+              <h1 className="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
                 Compassionate healthcare,{' '}
                 <span className="text-emerald-600">connected directly</span> to you.
               </h1>
 
-              <p className="text-base sm:text-lg text-slate-600 max-w-2xl leading-relaxed">
+              <p className="text-sm sm:text-base lg:text-lg text-slate-600 max-w-2xl leading-relaxed">
                 Book verified doctors, get real-time consultations, track digital prescriptions, and securely manage your medical records all in one place.
               </p>
 
@@ -151,7 +151,7 @@ export const LandingPage = () => {
               </form>
 
               {/* Trust Badges */}
-              <div className="flex flex-wrap items-center gap-6 pt-2 text-xs text-slate-500 font-medium">
+              <div className="flex flex-wrap items-center gap-4 sm:gap-6 pt-2 text-xs text-slate-500 font-medium">
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                   <span>100% Verified Practitioners</span>
@@ -167,8 +167,8 @@ export const LandingPage = () => {
               </div>
             </div>
 
-            {/* Hero Visual Card */}
-            <div className="lg:col-span-5 relative">
+            {/* Hero Visual Card — hidden on small screens */}
+            <div className="hidden lg:block lg:col-span-5 relative">
               <div className="relative mx-auto max-w-md bg-white rounded-3xl p-6 shadow-xl border border-slate-200/80">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                   <div className="flex items-center gap-3">
@@ -233,21 +233,21 @@ export const LandingPage = () => {
 
       {/* ─── STATS COUNTER ─── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-8 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
-          <div className="text-center border-r last:border-r-0 border-slate-100">
-            <p className="text-3xl sm:text-4xl font-extrabold text-slate-900">500+</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-5 sm:p-8 bg-white border border-slate-200/90 rounded-2xl shadow-xs">
+          <div className="text-center py-2">
+            <p className="text-2xl sm:text-4xl font-extrabold text-slate-900">500+</p>
             <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">Verified Doctors</p>
           </div>
-          <div className="text-center md:border-r border-slate-100">
-            <p className="text-3xl sm:text-4xl font-extrabold text-emerald-600">50,000+</p>
+          <div className="text-center py-2">
+            <p className="text-2xl sm:text-4xl font-extrabold text-emerald-600">50,000+</p>
             <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">Consultations Done</p>
           </div>
-          <div className="text-center border-r last:border-r-0 border-slate-100">
-            <p className="text-3xl sm:text-4xl font-extrabold text-slate-900">98.4%</p>
+          <div className="text-center py-2">
+            <p className="text-2xl sm:text-4xl font-extrabold text-slate-900">98.4%</p>
             <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">Satisfaction Rate</p>
           </div>
-          <div className="text-center">
-            <p className="text-3xl sm:text-4xl font-extrabold text-emerald-600">24/7</p>
+          <div className="text-center py-2">
+            <p className="text-2xl sm:text-4xl font-extrabold text-emerald-600">24/7</p>
             <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">Doctor Availability</p>
           </div>
         </div>
@@ -272,7 +272,7 @@ export const LandingPage = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
           {specialties.map((item) => (
             <div
               key={item.name}
@@ -364,7 +364,7 @@ export const LandingPage = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {featuredDoctors.map((doc) => (
             <div
               key={doc.id}
@@ -421,7 +421,7 @@ export const LandingPage = () => {
 
       {/* ─── CALL TO ACTION BANNER ─── */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="bg-slate-900 rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
+        <div className="bg-slate-900 rounded-3xl p-6 sm:p-12 text-white relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 sm:gap-8">
           <div className="space-y-3 max-w-xl">
             <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-emerald-400">
               <ShieldCheck className="h-4 w-4" /> HIPAA-Compliant & Safe

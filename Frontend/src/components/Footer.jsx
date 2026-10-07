@@ -5,10 +5,10 @@ export const Footer = () => {
   return (
     <footer className="bg-slate-900 text-slate-300 mt-20 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
           
           {/* Brand & mission */}
-          <div className="space-y-4">
+          <div className="col-span-2 md:col-span-1 space-y-4">
             <div className="flex items-center gap-2">
               <div className="h-9 w-9 rounded-xl bg-emerald-600 flex items-center justify-center text-white">
                 <Heart className="h-5 w-5 fill-white" />
