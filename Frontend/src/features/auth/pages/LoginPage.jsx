@@ -1,6 +1,6 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, Lock, Mail, Heart, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Heart, AlertCircle, Info } from 'lucide-react';
 import { useAuth } from '../Auth.context';
 import Button from '../../../components/ui/Button';
 
@@ -47,6 +47,12 @@ export const LoginPage = () => {
         ? `${fromPath}${fromSearch}`
         : (roleFromBackend === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard');
       navigate(redirectPath, { replace: true });
+    } else if (result.requiresEmailVerification) {
+      // Redirect to verify email page so user can resend the link
+      navigate(`/verify-email?email=${encodeURIComponent(result.email || formData.email)}`, {
+        replace: false,
+        state: { requiresEmailVerification: true, email: result.email || formData.email },
+      });
     } else {
       setLocalError(result.message || 'Login failed. Please check your credentials.');
     }
@@ -159,7 +165,7 @@ export const LoginPage = () => {
                   isLoading={isLoading}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 rounded-lg shadow-xs"
                 >
-                  Sign in to CareConnect
+                  Sign in to MediQ
                 </Button>
               </div>
             </form>

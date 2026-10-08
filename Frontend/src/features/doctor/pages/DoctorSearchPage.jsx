@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Search, 
@@ -83,7 +83,7 @@ export const DoctorSearchPage = () => {
         name: d.fullName || d.name || 'Doctor',
         fullName: d.fullName || d.name || 'Doctor',
         specialization: d.specialization || 'Healthcare Practitioner',
-        hospitalAffiliation: d.hospital || d.city || 'CareConnect Partner Network',
+        hospitalAffiliation: d.hospital || d.city || 'MediQ Partner Network',
         consultationFee: d.consultationFee ?? 500,
         experienceYears: d.yearsOfExperience ?? d.experienceYears ?? 0,
         averageRating: d.averageRating || 4.9,

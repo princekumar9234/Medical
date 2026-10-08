@@ -1,4 +1,4 @@
-const nodemailer = require('nodemailer');
+﻿const nodemailer = require('nodemailer');
 
 const createTransporter = () => {
   const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
@@ -31,17 +31,17 @@ const sendVerificationEmail = async (email, fullName, token) => {
   await transporter.sendMail({
     from: process.env.EMAIL_FROM,
     to: email,
-    subject: 'Verify your CareConnect email address',
+    subject: 'Verify your MediQ email address',
     html: `
       <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fff;">
         <div style="background: #16a34a; padding: 32px 40px; text-align: center;">
-          <h1 style="color: #fff; margin: 0; font-size: 28px; font-weight: 700;">CareConnect</h1>
+          <h1 style="color: #fff; margin: 0; font-size: 28px; font-weight: 700;">MediQ</h1>
           <p style="color: #bbf7d0; margin: 8px 0 0; font-size: 14px;">Healthcare platform</p>
         </div>
         <div style="padding: 40px;">
           <h2 style="color: #0f172a; font-size: 22px; margin: 0 0 16px;">Hello, ${fullName}!</h2>
           <p style="color: #475569; line-height: 1.7; margin: 0 0 24px;">
-            Thank you for registering with CareConnect. Please verify your email address by clicking the button below.
+            Thank you for registering with MediQ. Please verify your email address by clicking the button below.
           </p>
           <div style="text-align: center; margin: 32px 0;">
             <a href="${verifyUrl}" 
@@ -73,11 +73,11 @@ const sendPasswordResetEmail = async (email, fullName, token) => {
   await transporter.sendMail({
     from: process.env.EMAIL_FROM,
     to: email,
-    subject: 'Reset your CareConnect password',
+    subject: 'Reset your MediQ password',
     html: `
       <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fff;">
         <div style="background: #16a34a; padding: 32px 40px; text-align: center;">
-          <h1 style="color: #fff; margin: 0; font-size: 28px; font-weight: 700;">CareConnect</h1>
+          <h1 style="color: #fff; margin: 0; font-size: 28px; font-weight: 700;">MediQ</h1>
           <p style="color: #bbf7d0; margin: 8px 0 0; font-size: 14px;">Healthcare platform</p>
         </div>
         <div style="padding: 40px;">
@@ -119,7 +119,7 @@ const sendAppointmentEmail = async (email, subject, body) => {
     html: `
       <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #fff;">
         <div style="background: #16a34a; padding: 32px 40px; text-align: center;">
-          <h1 style="color: #fff; margin: 0; font-size: 28px; font-weight: 700;">CareConnect</h1>
+          <h1 style="color: #fff; margin: 0; font-size: 28px; font-weight: 700;">MediQ</h1>
         </div>
         <div style="padding: 40px;">
           ${body}

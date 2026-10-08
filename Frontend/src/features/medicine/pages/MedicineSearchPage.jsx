@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { 
   Search, 
   Pill, 
@@ -47,7 +47,7 @@ export const MedicineSearchPage = () => {
       sideEffects: ['Nausea', 'Diarrhea', 'Skin rash', 'Headache'],
       contraindications: ['Hypersensitivity to beta-lactam antibiotics (penicillins/cephalosporins)'],
       storage: 'Store below 25°C in a dry place protected from direct sunlight.',
-      source: 'CareConnect Verified Drug DB',
+      source: 'MediQ Verified Drug DB',
     },
     {
       _id: 'med-2',
@@ -64,7 +64,7 @@ export const MedicineSearchPage = () => {
       sideEffects: ['Muscle ache (myalgia)', 'Joint pain', 'Mild gastrointestinal discomfort', 'Elevated liver enzymes'],
       contraindications: ['Active liver disease', 'Unexplained persistent elevations in serum transaminases', 'Pregnancy and lactation'],
       storage: 'Store at 20°C to 25°C.',
-      source: 'CareConnect Verified Drug DB',
+      source: 'MediQ Verified Drug DB',
     },
     {
       _id: 'med-3',
@@ -81,7 +81,7 @@ export const MedicineSearchPage = () => {
       sideEffects: ['Abdominal discomfort', 'Metallic taste', 'Diarrhea', 'Decreased vitamin B12 absorption'],
       contraindications: ['Severe renal impairment (eGFR < 30 mL/min)', 'Acute metabolic acidosis', 'Severe dehydration'],
       storage: 'Keep container tightly closed, store below 30°C.',
-      source: 'CareConnect Verified Drug DB',
+      source: 'MediQ Verified Drug DB',
     },
     {
       _id: 'med-4',
@@ -98,7 +98,7 @@ export const MedicineSearchPage = () => {
       sideEffects: ['Rare in therapeutic doses. Hepatotoxicity with overdose'],
       contraindications: ['Severe hepatic failure or active liver disease'],
       storage: 'Store at room temperature 15°C to 30°C.',
-      source: 'CareConnect Verified Drug DB',
+      source: 'MediQ Verified Drug DB',
     },
     {
       _id: 'med-5',
@@ -115,7 +115,7 @@ export const MedicineSearchPage = () => {
       sideEffects: ['Headache', 'Abdominal pain', 'Constipation', 'Flatulence'],
       contraindications: ['Concomitant administration with nelfinavir or rilpivirine'],
       storage: 'Store between 15°C and 30°C in light-resistant container.',
-      source: 'CareConnect Verified Drug DB',
+      source: 'MediQ Verified Drug DB',
     },
     {
       _id: 'med-6',
@@ -132,7 +132,7 @@ export const MedicineSearchPage = () => {
       sideEffects: ['Diarrhea', 'Nausea', 'Vaginal candidiasis'],
       contraindications: ['History of penicillin-associated jaundice'],
       storage: 'Store below 25°C in moisture-proof packaging.',
-      source: 'CareConnect Verified Drug DB',
+      source: 'MediQ Verified Drug DB',
     },
     {
       _id: 'med-7',
@@ -149,7 +149,7 @@ export const MedicineSearchPage = () => {
       sideEffects: ['Headache', 'Diarrhea', 'Nausea'],
       contraindications: ['Hypersensitivity to pantoprazole'],
       storage: 'Store in cool and dry place away from direct sunlight.',
-      source: 'CareConnect Verified Drug DB',
+      source: 'MediQ Verified Drug DB',
     }
   ];
 

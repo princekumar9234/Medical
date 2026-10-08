@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Calendar,
@@ -189,7 +189,7 @@ export const AppointmentsPage = () => {
       doc.rect(0, 0, 210, 30, 'F');
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(16); doc.setFont('helvetica', 'bold');
-      doc.text('CareConnect Healthcare Platform', 15, 19);
+      doc.text('MediQ Healthcare Platform', 15, 19);
       doc.setFontSize(9); doc.setFont('helvetica', 'normal');
       doc.text('Official Digital Prescription', 148, 19);
 
@@ -232,7 +232,7 @@ export const AppointmentsPage = () => {
       }
 
       doc.setFontSize(8); doc.setTextColor(100, 116, 139);
-      doc.text('Digitally generated & authenticated via CareConnect Healthcare EHR Platform.', 15, 278);
+      doc.text('Digitally generated & authenticated via MediQ Healthcare EHR Platform.', 15, 278);
 
       doc.save(`Prescription_${selectedApt?._id || 'Apt'}.pdf`);
 

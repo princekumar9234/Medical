@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const mongoose = require('mongoose');
 const dns = require('dns');
 dns.setServers(['8.8.8.8', '8.8.4.4']);
@@ -55,7 +55,7 @@ const initialMedicines = [
       'Warfarin / Oral anticoagulants (may increase bleeding time)',
       'Methotrexate (may decrease clearance)',
     ],
-    source: 'CareConnect Verified Drug DB (FDA/CDSCO)',
+    source: 'MediQ Verified Drug DB (FDA/CDSCO)',
     lastUpdatedDate: new Date(),
   },
   {
@@ -102,7 +102,7 @@ const initialMedicines = [
       'Cyclosporine, clarithromycin, itraconazole (markedly increases atorvastatin plasma concentration)',
       'Gemfibrozil and other fibrates (increased myopathy risk)',
     ],
-    source: 'CareConnect Verified Drug DB (FDA/CDSCO)',
+    source: 'MediQ Verified Drug DB (FDA/CDSCO)',
     lastUpdatedDate: new Date(),
   },
   {
@@ -149,7 +149,7 @@ const initialMedicines = [
       'Cimetidine and cationic drugs excreted by renal tubular secretion',
       'Alcohol (increases risk of lactic acidosis)',
     ],
-    source: 'CareConnect Verified Drug DB (FDA/CDSCO)',
+    source: 'MediQ Verified Drug DB (FDA/CDSCO)',
     lastUpdatedDate: new Date(),
   },
   {
@@ -195,7 +195,7 @@ const initialMedicines = [
       'Warfarin (frequent high-dose acetaminophen can prolong INR)',
       'Alcohol (potentiates hepatotoxicity)',
     ],
-    source: 'CareConnect Verified Drug DB (FDA/CDSCO)',
+    source: 'MediQ Verified Drug DB (FDA/CDSCO)',
     lastUpdatedDate: new Date(),
   },
   {
@@ -244,7 +244,7 @@ const initialMedicines = [
       'Clopidogrel (omeprazole inhibits CYP2C19, potentially lowering antiplatelet effect)',
       'Diazepam, phenytoin, methotrexate (clearance may be reduced)',
     ],
-    source: 'CareConnect Verified Drug DB (FDA/CDSCO)',
+    source: 'MediQ Verified Drug DB (FDA/CDSCO)',
     lastUpdatedDate: new Date(),
   },
   {
@@ -293,7 +293,7 @@ const initialMedicines = [
       'Allopurinol (increased incidence of rash)',
       'Oral contraceptives (possible reduced efficacy)',
     ],
-    source: 'CareConnect Verified Drug DB (FDA/CDSCO)',
+    source: 'MediQ Verified Drug DB (FDA/CDSCO)',
     lastUpdatedDate: new Date(),
   },
   {
@@ -340,7 +340,7 @@ const initialMedicines = [
       'Atazanavir and nelfinavir (decreased absorption)',
       'Methotrexate (potential toxicity)',
     ],
-    source: 'CareConnect Verified Drug DB (FDA/CDSCO)',
+    source: 'MediQ Verified Drug DB (FDA/CDSCO)',
     lastUpdatedDate: new Date(),
   },
 ];

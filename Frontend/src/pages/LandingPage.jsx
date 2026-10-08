@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Search, 
@@ -304,7 +304,7 @@ export const LandingPage = () => {
               Simple 3-Step Process
             </h2>
             <p className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">
-              How CareConnect Works
+              How MediQ Works
             </p>
             <p className="text-sm text-slate-600 mt-2">
               Book consultations from anywhere in less than 2 minutes

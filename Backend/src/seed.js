@@ -33,6 +33,7 @@ const seedData = async () => {
       phone: '9876543210',
       role: 'doctor',
       isVerified: true,
+      isEmailVerified: true,
     });
 
     await DoctorProfile.create({
@@ -53,6 +54,7 @@ const seedData = async () => {
       phone: '9876543211',
       role: 'doctor',
       isVerified: true,
+      isEmailVerified: true,
     });
 
     await DoctorProfile.create({
@@ -74,6 +76,7 @@ const seedData = async () => {
       phone: '9876543212',
       role: 'patient',
       isVerified: true,
+      isEmailVerified: true,
     });
 
     await PatientProfile.create({

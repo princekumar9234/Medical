@@ -99,6 +99,18 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, user: normalised };
     } catch (err) {
+      // Handle unverified email — backend returns 403 with requiresEmailVerification: true
+      if (
+        err.response?.status === 403 &&
+        err.response?.data?.requiresEmailVerification
+      ) {
+        return {
+          success: false,
+          requiresEmailVerification: true,
+          email: err.response.data.data?.email || email,
+          message: err.response.data.message,
+        };
+      }
       const message =
         err.response?.data?.message ||
         err.response?.data?.errors?.[0]?.message ||

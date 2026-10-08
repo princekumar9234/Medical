@@ -1,4 +1,4 @@
-import { 
+﻿import { 
   Pill, 
   Barcode, 
   ShieldAlert, 
@@ -251,7 +251,7 @@ export const MedicineDetailsModal = ({ isOpen, onClose, medicine }) => {
 
         {/* Source & Last Updated Metadata */}
         <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-[11px] text-slate-400 gap-2">
-          <span>Source: <strong className="text-slate-600 font-medium">{medicine.source || 'CareConnect Verified Drug DB'}</strong></span>
+          <span>Source: <strong className="text-slate-600 font-medium">{medicine.source || 'MediQ Verified Drug DB'}</strong></span>
           <span>Last Updated: <strong className="text-slate-600 font-medium">{formattedDate}</strong></span>
         </div>
 

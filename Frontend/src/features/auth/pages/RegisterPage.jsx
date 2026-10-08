@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Heart, User, Stethoscope, Mail, Lock, Phone, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../Auth.context';
@@ -85,13 +85,14 @@ export const RegisterPage = () => {
       const result = await registerUser(payload);
 
       if (result.success) {
-        setSuccess('Account created successfully! Redirecting...');
+        // Registration successful — backend requires email verification before login
+        // Redirect to verify-email page with email pre-filled
+        setSuccess('Account created! Please check your email to verify your account.');
         setTimeout(() => {
-          if (role === 'DOCTOR') {
-            navigate('/doctor/dashboard');
-          } else {
-            navigate('/patient/dashboard');
-          }
+          navigate(`/verify-email?email=${encodeURIComponent(formData.email.trim())}`, {
+            replace: true,
+            state: { requiresEmailVerification: true, email: formData.email.trim() },
+          });
         }, 1000);
       } else {
         setError(result.message || 'Registration failed. Please try again.');
@@ -116,7 +117,7 @@ export const RegisterPage = () => {
             </span>
           </Link>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-            Create your CareConnect account
+            Create your MediQ account
           </h2>
           <p className="mt-2 text-sm text-slate-600">
             Join thousands of patients and practitioners on our verified platform

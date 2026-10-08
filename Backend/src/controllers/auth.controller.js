@@ -73,27 +73,24 @@ const register = async (req, res, next) => {
       });
     }
 
-    // Send verification email (don't fail registration if email fails)
+    // Send verification email
     try {
       await sendVerificationEmail(email, actualFullName, verificationToken);
     } catch (emailErr) {
       console.error('Email send failed:', emailErr.message);
     }
 
-    // Generate JWT token for immediate access
-    const token = generateToken(user._id, user.role, user.tokenVersion);
-
     return successResponse(
       res,
-      'Registration successful!',
+      'Registration successful! A verification link has been sent to your email. Please verify your email before logging in.',
       {
-        token,
+        requiresEmailVerification: true,
         user: {
           id: user._id,
           fullName: user.fullName,
           email: user.email,
           role: user.role,
-          isEmailVerified: user.isEmailVerified,
+          isEmailVerified: false,
           profilePhoto: user.profilePhoto,
         },
       },
@@ -198,6 +195,27 @@ const login = async (req, res, next) => {
 
     if (!user.isActive) {
       return errorResponse(res, 'Your account has been deactivated. Please contact support.', 403);
+    }
+
+    // Enforce email verification: User cannot log in unless email is verified
+    if (!user.isEmailVerified) {
+      const verificationToken = user.generateEmailVerificationToken();
+      await user.save();
+
+      try {
+        await sendVerificationEmail(user.email, user.fullName, verificationToken);
+      } catch (emailErr) {
+        console.error('Email send failed on unverified login attempt:', emailErr.message);
+      }
+
+      return res.status(403).json({
+        success: false,
+        requiresEmailVerification: true,
+        message: 'Your email address is not verified. A verification link has been sent to your email. Please verify your email to log in.',
+        data: {
+          email: user.email,
+        },
+      });
     }
 
     user.lastLogin = new Date();

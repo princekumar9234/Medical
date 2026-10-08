@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Calendar, 
@@ -105,7 +105,7 @@ export const PatientDashboard = () => {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
-    doc.text('CareConnect Healthcare Platform', 15, 18);
+    doc.text('MediQ Healthcare Platform', 15, 18);
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
@@ -137,7 +137,7 @@ export const PatientDashboard = () => {
 
     doc.setFontSize(8);
     doc.setTextColor(100, 116, 139);
-    doc.text('Digitally generated & authenticated via CareConnect HIPAA-compliant cloud EHR.', 15, 270);
+    doc.text('Digitally generated & authenticated via MediQ HIPAA-compliant cloud EHR.', 15, 270);
     doc.text(`Rx ID: ${rx._id || 'RX-001'} • For emergency medical assistance please dial emergency services.`, 15, 276);
 
     doc.save(`Prescription_${rx._id || 'record'}.pdf`);

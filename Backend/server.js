@@ -1,4 +1,4 @@
-require('dotenv').config();
+﻿require('dotenv').config();
 const http = require('http');
 const { Server } = require('socket.io');
 const connectDB = require('./src/config/database');
@@ -126,7 +126,7 @@ const startServer = async () => {
   await connectDB();
 
   server.listen(PORT, () => {
-    console.log(`\n🚀 CareConnect Server running on port ${PORT}`);
+    console.log(`\n🚀 MediQ Server running on port ${PORT}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
     console.log(`📡 API: http://localhost:${PORT}/api`);
     console.log(`🏥 Health: http://localhost:${PORT}/api/health\n`);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Star, 
@@ -92,7 +92,7 @@ export const DoctorPublicProfilePage = () => {
           name: u?.fullName || rawDoc?.name || 'Doctor',
           fullName: u?.fullName || rawDoc?.name || 'Doctor',
           specialization: p?.specialization || rawDoc?.specialization || 'General Medicine',
-          hospitalAffiliation: w[0]?.hospitalName || p?.city || rawDoc?.hospitalAffiliation || 'CareConnect Partner Network',
+          hospitalAffiliation: w[0]?.hospitalName || p?.city || rawDoc?.hospitalAffiliation || 'MediQ Partner Network',
           consultationFee: p?.consultationFee ?? rawDoc?.consultationFee ?? 500,
           experienceYears: p?.yearsOfExperience ?? rawDoc?.experienceYears ?? 0,
           averageRating: p?.rating || rawDoc?.averageRating || 4.9,
@@ -228,7 +228,7 @@ export const DoctorPublicProfilePage = () => {
             <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs sm:text-sm text-slate-500 pt-1">
               <span className="flex items-center gap-1.5">
                 <Building className="h-4 w-4 text-slate-400" />
-                {doctor.hospitalAffiliation || 'CareConnect Partner Hospital'}
+                {doctor.hospitalAffiliation || 'MediQ Partner Hospital'}
               </span>
               <span className="flex items-center gap-1.5">
                 <Award className="h-4 w-4 text-slate-400" />
@@ -424,7 +424,7 @@ export const DoctorPublicProfilePage = () => {
             <div className="text-xs text-slate-600 space-y-2">
               <p>• {doctor.education || 'Certified Medical Practitioner'}</p>
               <p>• Certified by National Board of Medical Examiners</p>
-              <p>• Member of CareConnect Verified Clinical Network</p>
+              <p>• Member of MediQ Verified Clinical Network</p>
             </div>
           </div>
 

@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Link, useSearchParams, useParams, useNavigate } from 'react-router-dom';
-import { CheckCircle2, XCircle, Mail, Loader2, ArrowRight, RefreshCw, Heart } from 'lucide-react';
+﻿import { useState, useEffect } from 'react';
+import { Link, useSearchParams, useParams, useNavigate, useLocation } from 'react-router-dom';
+import { CheckCircle2, XCircle, Mail, Loader2, ArrowRight, RefreshCw, Heart, AlertCircle } from 'lucide-react';
 import { authService } from '../services/auth.service';
 import { useAuth } from '../Auth.context';
 import Button from '../../../components/ui/Button';
@@ -11,12 +11,18 @@ export const VerifyEmailPage = () => {
   const { token: paramToken } = useParams();
   const token = searchParams.get('token') || paramToken;
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, updateUser } = useAuth();
+
+  // Email can come from: URL param ?email=..., navigation state, or logged-in user
+  const emailFromUrl = searchParams.get('email') || '';
+  const emailFromState = location.state?.email || '';
+  const redirectedDueToVerification = location.state?.requiresEmailVerification || false;
 
   const [loading, setLoading] = useState(Boolean(token));
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [resendEmail, setResendEmail] = useState(user?.email || '');
+  const [resendEmail, setResendEmail] = useState(emailFromUrl || emailFromState || user?.email || '');
   const [resending, setResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
 
@@ -155,8 +161,18 @@ export const VerifyEmailPage = () => {
               <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
                 {error
                   ? error
-                  : 'Please check your inbox and click the verification link sent by CareConnect.'}
+                  : 'Please check your inbox and click the verification link sent by MediQ.'}
               </p>
+
+              {/* Banner: redirected from login because email not verified */}
+              {redirectedDueToVerification && !resendSuccess && (
+                <div className="mb-4 rounded-xl bg-amber-50 border border-amber-200 p-3.5 flex items-start gap-2.5">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-amber-500 mt-0.5" />
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    <strong>Email not verified.</strong> Your account is registered but your email address hasn't been verified yet. A new verification link has been sent to <strong>{resendEmail}</strong>. Please check your inbox (and spam folder).
+                  </p>
+                </div>
+              )}
 
               {/* Resend Verification Form */}
               <form onSubmit={handleResend} className="pt-4 text-left space-y-3 border-t border-slate-100">

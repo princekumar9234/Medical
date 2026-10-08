@@ -1,7 +1,7 @@
-{
+﻿{
   "name": "careconnect-backend",
   "version": "1.0.0",
-  "description": "CareConnect Healthcare Platform - Backend API",
+  "description": "MediQ Healthcare Platform - Backend API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -36,6 +36,6 @@
     "mongodb",
     "doctor-patient"
   ],
-  "author": "CareConnect",
+  "author": "MediQ",
   "license": "ISC"
 }

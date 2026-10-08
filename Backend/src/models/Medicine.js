@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+﻿const mongoose = require('mongoose');
 
 const medicineSchema = new mongoose.Schema(
   {
@@ -64,7 +64,7 @@ const medicineSchema = new mongoose.Schema(
     drugInteractions: [{ type: String, trim: true }],
     source: {
       type: String,
-      default: 'CareConnect Verified Drug DB',
+      default: 'MediQ Verified Drug DB',
     },
     lastUpdatedDate: {
       type: Date,

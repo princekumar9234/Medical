@@ -1,4 +1,4 @@
-const axios = require('axios');
+﻿const axios = require('axios');
 const Medicine = require('../models/Medicine');
 
 // ─────────────────────────────────────────────────────────────────
@@ -25,7 +25,7 @@ const formatDbMedicine = (m) => ({
   sideEffects: m.sideEffects || [],
   storage: m.storage || 'Store in a cool, dry place away from sunlight.',
   drugInteractions: m.drugInteractions || [],
-  source: m.source || 'CareConnect Verified Drug DB',
+  source: m.source || 'MediQ Verified Drug DB',
   lastUpdatedDate: m.lastUpdatedDate || m.updatedAt || new Date(),
 });
 

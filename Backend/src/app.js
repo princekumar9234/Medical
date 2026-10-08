@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
@@ -90,7 +90,7 @@ app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'CareConnect API is running.', environment: process.env.NODE_ENV });
+  res.json({ success: true, message: 'MediQ API is running.', environment: process.env.NODE_ENV });
 });
 
 // 404

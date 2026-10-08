@@ -1,4 +1,4 @@
-import { Heart, ShieldCheck, Clock, PhoneCall, Mail, MapPin } from 'lucide-react';
+﻿import { Heart, ShieldCheck, Clock, PhoneCall, Mail, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Footer = () => {
@@ -92,7 +92,7 @@ export const Footer = () => {
         </div>
 
         <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-          <p>© {new Date().getFullYear()} CareConnect Health Technologies Inc. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} MediQ Health Technologies Inc. All rights reserved.</p>
           <div className="flex gap-6">
             <span className="hover:text-slate-400 cursor-pointer">Privacy Policy</span>
             <span className="hover:text-slate-400 cursor-pointer">Terms of Service</span>
