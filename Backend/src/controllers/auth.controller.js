@@ -106,27 +106,109 @@ const register = async (req, res, next) => {
 // ─────────────────────────────────────────────
 const verifyEmail = async (req, res, next) => {
   try {
-    const token = req.params.token || req.query.token;
+    // Accept token from path param or query string, and clean it
+    const rawToken = req.params.token || req.query.token;
+    const queryEmail = req.query.email ? decodeURIComponent(req.query.email).trim().toLowerCase() : null;
 
-    if (!token) {
+    if (!rawToken) {
+      if (queryEmail) {
+        const existing = await User.findOne({ email: queryEmail });
+        if (existing && existing.isEmailVerified) {
+          return successResponse(
+            res,
+            'Email is already verified! You can now log in.',
+            {
+              user: {
+                id: existing._id,
+                fullName: existing.fullName,
+                email: existing.email,
+                role: existing.role,
+                isEmailVerified: true,
+              },
+            },
+            200
+          );
+        }
+      }
       return errorResponse(res, 'Email verification token is missing.', 400);
     }
 
+    // Decode and trim to handle any URL encoding or whitespace issues
+    const token = decodeURIComponent(rawToken).trim();
+    console.log(`[verifyEmail] Verifying token (prefix: ${token.substring(0, 10)}..., len=${token.length})`);
+
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
-    const user = await User.findOne({
+    // 1. Look for user with this verification token
+    let user = await User.findOne({
       emailVerificationToken: hashedToken,
-      emailVerificationExpires: { $gt: Date.now() },
     }).select('+emailVerificationToken +emailVerificationExpires');
 
+    // 2. If not found by token, check if user with queryEmail is already verified
+    if (!user && queryEmail) {
+      const existingUser = await User.findOne({ email: queryEmail });
+      if (existingUser && existingUser.isEmailVerified) {
+        console.log(`[verifyEmail] User ${existingUser.email} already verified (found via queryEmail).`);
+        return successResponse(
+          res,
+          'Email is already verified! You can now log in.',
+          {
+            user: {
+              id: existingUser._id,
+              fullName: existingUser.fullName,
+              email: existingUser.email,
+              role: existingUser.role,
+              isEmailVerified: true,
+            },
+          },
+          200
+        );
+      }
+    }
+
     if (!user) {
-      return errorResponse(res, 'Email verification link is invalid or has expired.', 400);
+      console.log(`[verifyEmail] No user found for hashed token: ${hashedToken.substring(0, 12)}...`);
+      return errorResponse(
+        res,
+        'Email verification link is invalid or has expired. Please use the Resend button to get a new link.',
+        400
+      );
+    }
+
+    // 3. User found by token — if already verified, return success
+    if (user.isEmailVerified) {
+      console.log(`[verifyEmail] User ${user.email} is already verified.`);
+      return successResponse(
+        res,
+        'Email is already verified! You can now log in.',
+        {
+          user: {
+            id: user._id,
+            fullName: user.fullName,
+            email: user.email,
+            role: user.role,
+            isEmailVerified: true,
+          },
+        },
+        200
+      );
+    }
+
+    // Check expiration
+    if (user.emailVerificationExpires && user.emailVerificationExpires < Date.now()) {
+      return errorResponse(
+        res,
+        'Email verification link has expired. Please use the Resend button to get a new link.',
+        400
+      );
     }
 
     user.isEmailVerified = true;
-    user.emailVerificationToken = undefined;
-    user.emailVerificationExpires = undefined;
+    // Note: Keep emailVerificationToken so duplicate calls (e.g. React StrictMode, double clicks, page refresh)
+    // within the expiry period won't fail with a false "invalid link" error! It will be cleared once user logs in.
     await user.save();
+
+    console.log(`[verifyEmail] Successfully verified email for user: ${user.email}`);
 
     return successResponse(
       res,
@@ -199,11 +281,15 @@ const login = async (req, res, next) => {
 
     // Enforce email verification: User cannot log in unless email is verified
     if (!user.isEmailVerified) {
-      const verificationToken = user.generateEmailVerificationToken();
-      await user.save();
+      const userWithToken = await User.findById(user._id).select(
+        '+emailVerificationToken +emailVerificationExpires'
+      );
+
+      const tokenToSend = userWithToken.generateEmailVerificationToken();
+      await userWithToken.save();
 
       try {
-        await sendVerificationEmail(user.email, user.fullName, verificationToken);
+        await sendVerificationEmail(user.email, user.fullName, tokenToSend);
       } catch (emailErr) {
         console.error('Email send failed on unverified login attempt:', emailErr.message);
       }
@@ -211,15 +297,23 @@ const login = async (req, res, next) => {
       return res.status(403).json({
         success: false,
         requiresEmailVerification: true,
-        message: 'Your email address is not verified. A verification link has been sent to your email. Please verify your email to log in.',
-        data: {
-          email: user.email,
-        },
+        message:
+          'Your email is not verified. A verification link has been sent to your email. Please verify your email before logging in.',
+        data: { email: user.email },
       });
     }
 
-    user.lastLogin = new Date();
-    await user.save();
+    // Clean up verification tokens on successful login if they were kept
+    const userToUpdate = await User.findById(user._id).select('+emailVerificationToken +emailVerificationExpires');
+    if (userToUpdate && userToUpdate.emailVerificationToken) {
+      userToUpdate.emailVerificationToken = undefined;
+      userToUpdate.emailVerificationExpires = undefined;
+      userToUpdate.lastLogin = new Date();
+      await userToUpdate.save();
+    } else {
+      user.lastLogin = new Date();
+      await user.save();
+    }
 
     const token = generateToken(user._id, user.role, user.tokenVersion);
 

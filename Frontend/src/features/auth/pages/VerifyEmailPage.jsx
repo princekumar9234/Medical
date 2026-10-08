@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle2, XCircle, Mail, Loader2, ArrowRight, RefreshCw, Heart, AlertCircle } from 'lucide-react';
 import { authService } from '../services/auth.service';
@@ -26,42 +26,42 @@ export const VerifyEmailPage = () => {
   const [resending, setResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
 
-  useEffect(() => {
-    if (!token) return;
+  // Guard to ensure verification is executed only once, even in React 18 StrictMode
+  const verificationAttempted = useRef(false);
 
-    let isMounted = true;
+  useEffect(() => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    if (verificationAttempted.current) return;
+    verificationAttempted.current = true;
+
     const runVerification = async () => {
       setLoading(true);
       setError('');
       try {
-        const res = await authService.verifyEmail(token);
-        if (isMounted) {
-          setSuccess(true);
-          toast.success(res.data?.message || 'Email verified successfully!');
-          if (updateUser) {
-            updateUser({ isEmailVerified: true });
-          }
+        const res = await authService.verifyEmail(token, emailFromUrl);
+        setSuccess(true);
+        setError('');
+        toast.success(res.data?.message || 'Email verified successfully!');
+        if (updateUser) {
+          updateUser({ isEmailVerified: true });
         }
       } catch (err) {
-        if (isMounted) {
-          const msg =
-            err.response?.data?.message ||
-            'Verification link is invalid or has expired. Please request a new one.';
-          setError(msg);
-          toast.error(msg);
-        }
+        const msg =
+          err.response?.data?.message ||
+          'Verification link is invalid or has expired. Please request a new one.';
+        setError(msg);
+        toast.error(msg);
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
     runVerification();
-    return () => {
-      isMounted = false;
-    };
-  }, [token]);
+  }, [token, emailFromUrl, updateUser]);
 
   const handleResend = async (e) => {
     e.preventDefault();
@@ -103,7 +103,7 @@ export const VerifyEmailPage = () => {
               <Heart className="h-6 w-6 fill-white" />
             </div>
             <span className="text-2xl font-bold tracking-tight text-slate-900">
-              Care<span className="text-emerald-600">Connect</span>
+              Medi<span className="text-emerald-600">Q</span>
             </span>
           </Link>
         </div>

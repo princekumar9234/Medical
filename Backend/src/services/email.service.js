@@ -1,4 +1,4 @@
-﻿const nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer');
 
 const createTransporter = () => {
   const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
@@ -25,7 +25,7 @@ const createTransporter = () => {
  * Send email verification link
  */
 const sendVerificationEmail = async (email, fullName, token) => {
-  const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+  const verifyUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}&email=${encodeURIComponent(email)}`;
 
   const transporter = createTransporter();
   await transporter.sendMail({

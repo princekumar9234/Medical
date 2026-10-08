@@ -1,4 +1,4 @@
-﻿import { Heart, ShieldCheck, Clock, PhoneCall, Mail, MapPin } from 'lucide-react';
+import { Heart, ShieldCheck, Clock, PhoneCall, Mail, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Footer = () => {
@@ -81,7 +81,7 @@ export const Footer = () => {
               </div>
               <div className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 text-emerald-500" />
-                <span>support@careconnect.health</span>
+                <span>support@mediq.health</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <Clock className="h-4 w-4 text-emerald-500" />

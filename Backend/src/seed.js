@@ -28,7 +28,7 @@ const seedData = async () => {
     // 1. Create Doctors
     const docUser1 = await User.create({
       fullName: 'Dr. Sarah Smith',
-      email: 'dr.sarah@careconnect.health',
+      email: 'dr.sarah@mediq.health',
       password: hashedPassword,
       phone: '9876543210',
       role: 'doctor',
@@ -49,7 +49,7 @@ const seedData = async () => {
 
     const docUser2 = await User.create({
       fullName: 'Dr. Marcus Vance',
-      email: 'dr.marcus@careconnect.health',
+      email: 'dr.marcus@mediq.health',
       password: hashedPassword,
       phone: '9876543211',
       role: 'doctor',
@@ -96,7 +96,7 @@ const seedData = async () => {
 
     console.log('✅ Seed completed successfully!');
     console.log('----------------------------------------------------');
-    console.log('Doctor Account : dr.sarah@careconnect.health / Password123!');
+    console.log('Doctor Account : dr.sarah@mediq.health / Password123!');
     console.log('Patient Account: patient.john@example.com / Password123!');
     console.log('----------------------------------------------------');
 
