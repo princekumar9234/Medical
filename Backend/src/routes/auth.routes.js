@@ -62,7 +62,8 @@ router.post(
   login
 );
 
-// GET /api/auth/verify-email/:token
+// GET /api/auth/verify-email and /api/auth/verify-email/:token
+router.get('/verify-email', verifyEmail);
 router.get('/verify-email/:token', verifyEmail);
 
 // POST /api/auth/resend-verification

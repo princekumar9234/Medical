@@ -38,6 +38,18 @@ const formatDate = (dateStr) => {
 const getInitials = (name = '') =>
   name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?';
 
+// Helper to resolve uploaded profile photo URL
+const getProfileImageUrl = (photo) => {
+  if (!photo) return null;
+  if (photo.startsWith('http://') || photo.startsWith('https://') || photo.startsWith('blob:') || photo.startsWith('data:')) {
+    return photo;
+  }
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  const backendOrigin = apiBase.replace(/\/api\/?$/, '');
+  const cleanPath = photo.startsWith('/') ? photo.slice(1) : photo;
+  return `${backendOrigin}/${cleanPath}`;
+};
+
 export const PatientDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -243,7 +255,24 @@ export const PatientDashboard = () => {
               </div>
 
               <div className="py-4 flex items-center gap-4">
-                <div className="h-14 w-14 rounded-2xl bg-emerald-800 text-emerald-200 font-bold flex items-center justify-center text-sm border border-emerald-700 shrink-0">
+                {nextAppointment.doctor?.profilePhoto ? (
+                  <img
+                    src={getProfileImageUrl(nextAppointment.doctor.profilePhoto)}
+                    alt={nextAppointment.doctor?.fullName || 'Doctor'}
+                    className="h-14 w-14 rounded-2xl object-cover border border-emerald-700 shrink-0 shadow-xs"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      if (e.currentTarget.nextElementSibling) {
+                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                      }
+                    }}
+                  />
+                ) : null}
+                <div
+                  className={`h-14 w-14 rounded-2xl bg-emerald-800 text-emerald-200 font-bold flex items-center justify-center text-sm border border-emerald-700 shrink-0 ${
+                    nextAppointment.doctor?.profilePhoto ? 'hidden' : 'flex'
+                  }`}
+                >
                   {getInitials(nextAppointment.doctor?.fullName || 'Doctor')}
                 </div>
                 <div>
@@ -320,7 +349,24 @@ export const PatientDashboard = () => {
                   return (
                     <div key={apt._id} className="py-3.5 flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs shrink-0">
+                        {apt.doctor?.profilePhoto ? (
+                          <img
+                            src={getProfileImageUrl(apt.doctor.profilePhoto)}
+                            alt={docName}
+                            className="h-10 w-10 rounded-xl object-cover border border-slate-200 shrink-0"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              if (e.currentTarget.nextElementSibling) {
+                                e.currentTarget.nextElementSibling.style.display = 'flex';
+                              }
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className={`h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-xs shrink-0 ${
+                            apt.doctor?.profilePhoto ? 'hidden' : 'flex'
+                          }`}
+                        >
                           {getInitials(docName)}
                         </div>
                         <div>

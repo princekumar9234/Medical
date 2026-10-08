@@ -40,7 +40,7 @@ const seedData = async () => {
       specialization: 'Cardiology',
       qualifications: 'MD, Cardiology Fellowship',
       yearsOfExperience: 12,
-      consultationFee: 75,
+      consultationFee: 800,
       about: 'Board-certified Cardiologist specializing in preventive cardiology, hypertension management, echocardiography, and cardiovascular risk reduction.',
       registrationNumber: 'MD-NY-84920',
       education: [{ degree: 'MD', institution: 'Johns Hopkins University School of Medicine', year: 2008 }]
@@ -60,7 +60,7 @@ const seedData = async () => {
       specialization: 'General Medicine',
       qualifications: 'DO',
       yearsOfExperience: 9,
-      consultationFee: 50,
+      consultationFee: 500,
       about: 'Dedicated primary care physician focused on family wellness, chronic lifestyle condition control, and preventive diagnostics.',
       registrationNumber: 'MD-MA-31945',
       education: [{ degree: 'DO', institution: 'Boston University School of Medicine', year: 2011 }]

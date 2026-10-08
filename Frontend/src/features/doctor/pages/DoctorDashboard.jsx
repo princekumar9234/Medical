@@ -28,6 +28,17 @@ const getInitials = (name) => {
   return name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 };
 
+const getProfileImageUrl = (photo) => {
+  if (!photo) return null;
+  if (photo.startsWith('http://') || photo.startsWith('https://') || photo.startsWith('blob:') || photo.startsWith('data:')) {
+    return photo;
+  }
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  const backendOrigin = apiBase.replace(/\/api\/?$/, '');
+  const cleanPath = photo.startsWith('/') ? photo.slice(1) : photo;
+  return `${backendOrigin}/${cleanPath}`;
+};
+
 const formatDate = (dateStr) => {
   if (!dateStr) return '—';
   return new Date(dateStr).toLocaleDateString('en-IN', {
@@ -102,7 +113,24 @@ const AppointmentCard = ({ apt, onStatusChange }) => {
     <div className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 last:border-0">
       {/* Patient Info */}
       <div className="flex items-start gap-3.5">
-        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-slate-700 font-bold text-xs shrink-0">
+        {apt.patient?.profilePhoto ? (
+          <img
+            src={getProfileImageUrl(apt.patient.profilePhoto)}
+            alt={patientName}
+            className="h-10 w-10 rounded-full object-cover border border-slate-200 shrink-0"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              if (e.currentTarget.nextElementSibling) {
+                e.currentTarget.nextElementSibling.style.display = 'flex';
+              }
+            }}
+          />
+        ) : null}
+        <div
+          className={`h-10 w-10 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-slate-700 font-bold text-xs shrink-0 ${
+            apt.patient?.profilePhoto ? 'hidden' : 'flex'
+          }`}
+        >
           {getInitials(patientName)}
         </div>
         <div>

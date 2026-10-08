@@ -64,7 +64,7 @@ export const LoginPage = () => {
               <Heart className="h-6 w-6 fill-white" />
             </div>
             <span className="text-2xl font-bold tracking-tight text-slate-900">
-              Care<span className="text-emerald-600">Connect</span>
+              Medi<span className="text-emerald-600">Q</span>
             </span>
           </Link>
           <h2 className="text-2xl font-bold tracking-tight text-slate-900">

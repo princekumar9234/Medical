@@ -12,6 +12,8 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './features/auth/pages/LoginPage';
 import RegisterPage from './features/auth/pages/RegisterPage';
 import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
+import VerifyEmailPage from './features/auth/pages/VerifyEmailPage';
+import ResetPasswordPage from './features/auth/pages/ResetPasswordPage';
 import DoctorSearchPage from './features/doctor/pages/DoctorSearchPage';
 import DoctorPublicProfilePage from './features/doctor/pages/DoctorPublicProfilePage';
 import MedicineSearchPage from './features/medicine/pages/MedicineSearchPage';
@@ -46,6 +48,10 @@ export function App() {
               <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
               <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
               {/* Protected info pages — login required */}
               <Route path="/doctors" element={<ProtectedRoute><DoctorSearchPage /></ProtectedRoute>} />

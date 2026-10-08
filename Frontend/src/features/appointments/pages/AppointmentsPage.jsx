@@ -35,6 +35,18 @@ const formatDate = (dateStr) => {
 const getInitials = (name = '') =>
   name.split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?';
 
+// Helper to resolve uploaded profile photo URL
+const getProfileImageUrl = (photo) => {
+  if (!photo) return null;
+  if (photo.startsWith('http://') || photo.startsWith('https://') || photo.startsWith('blob:') || photo.startsWith('data:')) {
+    return photo;
+  }
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  const backendOrigin = apiBase.replace(/\/api\/?$/, '');
+  const cleanPath = photo.startsWith('/') ? photo.slice(1) : photo;
+  return `${backendOrigin}/${cleanPath}`;
+};
+
 // ── Status Badge ─────────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
   const map = {
@@ -354,7 +366,24 @@ export const AppointmentsPage = () => {
 
                   {/* Person Info */}
                   <div className="flex items-start gap-3.5">
-                    <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">
+                    {(isDoctor ? apt.patient?.profilePhoto : apt.doctor?.profilePhoto) ? (
+                      <img
+                        src={getProfileImageUrl(isDoctor ? apt.patient?.profilePhoto : apt.doctor?.profilePhoto)}
+                        alt={otherPerson}
+                        className="h-11 w-11 rounded-xl object-cover border border-slate-200 shrink-0"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          if (e.currentTarget.nextElementSibling) {
+                            e.currentTarget.nextElementSibling.style.display = 'flex';
+                          }
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={`h-11 w-11 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0 ${
+                        (isDoctor ? apt.patient?.profilePhoto : apt.doctor?.profilePhoto) ? 'hidden' : 'flex'
+                      }`}
+                    >
                       {isDoctor
                         ? <User className="h-5 w-5" />
                         : <Stethoscope className="h-5 w-5" />}

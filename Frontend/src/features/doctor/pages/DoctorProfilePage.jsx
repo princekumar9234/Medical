@@ -1,19 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Stethoscope, Building, Award, DollarSign, Save, CheckCircle2, Loader2, ArrowLeft } from 'lucide-react';
+import { Stethoscope, Building, Award, Save, CheckCircle2, Loader2, ArrowLeft, Camera, Upload } from 'lucide-react';
 import { useAuth } from '../../auth/Auth.context';
 import { doctorService } from '../services/doctor.service';
 import Button from '../../../components/ui/Button';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import toast from 'react-hot-toast';
 
+// Helper to resolve uploaded profile photo URL
+const getProfileImageUrl = (photo) => {
+  if (!photo) return null;
+  if (photo.startsWith('http://') || photo.startsWith('https://') || photo.startsWith('blob:') || photo.startsWith('data:')) {
+    return photo;
+  }
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  const backendOrigin = apiBase.replace(/\/api\/?$/, '');
+  const cleanPath = photo.startsWith('/') ? photo.slice(1) : photo;
+  return `${backendOrigin}/${cleanPath}`;
+};
+
 export const DoctorProfilePage = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState(user?.profilePhoto || null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -21,7 +35,7 @@ export const DoctorProfilePage = () => {
     phone: '',
     specialization: 'General Medicine',
     hospitalAffiliation: '',
-    consultationFee: '50',
+    consultationFee: '500',
     experienceYears: '0',
     licenseNumber: '',
     about: '',
@@ -50,13 +64,19 @@ export const DoctorProfilePage = () => {
         const u = res.data?.data?.user;
         const p = res.data?.data?.profile;
 
+        if (u?.profilePhoto) {
+          setPhotoUrl(u.profilePhoto);
+        } else if (user?.profilePhoto) {
+          setPhotoUrl(user.profilePhoto);
+        }
+
         setFormData({
           name: u?.fullName || user?.fullName || user?.name || '',
           email: u?.email || user?.email || '',
           phone: u?.phone || user?.phone || '',
           specialization: p?.specialization || 'General Medicine',
           hospitalAffiliation: p?.city || '',
-          consultationFee: p?.consultationFee !== undefined ? String(p.consultationFee) : '50',
+          consultationFee: p?.consultationFee !== undefined ? String(p.consultationFee) : '500',
           experienceYears: p?.yearsOfExperience !== undefined ? String(p.yearsOfExperience) : '0',
           licenseNumber: p?.registrationNumber || '',
           about: p?.about || '',
@@ -71,7 +91,7 @@ export const DoctorProfilePage = () => {
           phone: user?.phone || '',
           specialization: 'General Medicine',
           hospitalAffiliation: '',
-          consultationFee: '50',
+          consultationFee: '500',
           experienceYears: '0',
           licenseNumber: '',
           about: '',
@@ -97,7 +117,7 @@ export const DoctorProfilePage = () => {
         phone: formData.phone,
         specialization: formData.specialization,
         city: formData.hospitalAffiliation,
-        consultationFee: Number(formData.consultationFee) || 50,
+        consultationFee: Number(formData.consultationFee) || 500,
         yearsOfExperience: Number(formData.experienceYears) || 0,
         registrationNumber: formData.licenseNumber,
         about: formData.about,
@@ -113,6 +133,39 @@ export const DoctorProfilePage = () => {
     }
   };
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file (JPEG, PNG, WebP)');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size must be less than 5MB');
+      return;
+    }
+
+    const uploadData = new FormData();
+    uploadData.append('photo', file);
+
+    setUploadingPhoto(true);
+    try {
+      const res = await doctorService.uploadPhoto(uploadData);
+      const newPhoto = res.data?.data?.profilePhoto;
+      setPhotoUrl(newPhoto);
+      if (updateUser) {
+        updateUser({ profilePhoto: newPhoto });
+      }
+      toast.success('Doctor profile photo updated successfully!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload photo.');
+    } finally {
+      setUploadingPhoto(false);
+      e.target.value = '';
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner fullPage={false} text="Loading practitioner profile..." />;
   }
@@ -123,14 +176,71 @@ export const DoctorProfilePage = () => {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       
       {/* Header */}
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-2xl bg-emerald-100 text-emerald-800 font-bold text-2xl flex items-center justify-center">
-            {initial}
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          
+          {/* Profile Photo / Initials & Upload button */}
+          <div className="relative group">
+            {photoUrl ? (
+              <img
+                src={getProfileImageUrl(photoUrl)}
+                alt={formData.name}
+                className="h-20 w-20 rounded-2xl object-cover border-2 border-emerald-500/30 shadow-xs"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  if (e.currentTarget.nextElementSibling) {
+                    e.currentTarget.nextElementSibling.style.display = 'flex';
+                  }
+                }}
+              />
+            ) : null}
+            <div
+              className={`h-20 w-20 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-50 border border-emerald-200 text-emerald-800 font-bold text-2xl flex flex-col items-center justify-center shadow-xs ${
+                photoUrl ? 'hidden' : 'flex'
+              }`}
+            >
+              <Stethoscope className="h-5 w-5 text-emerald-600 mb-0.5 opacity-80" />
+              <span>{initial}</span>
+            </div>
+
+            <label
+              htmlFor="doctor-photo-upload"
+              className="absolute -bottom-2 -right-2 bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-xl cursor-pointer shadow-md transition-all hover:scale-105 flex items-center justify-center"
+              title="Upload / Update Profile Photo"
+            >
+              {uploadingPhoto ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Camera className="h-3.5 w-3.5" />
+              )}
+              <input
+                id="doctor-photo-upload"
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                disabled={uploadingPhoto}
+                className="hidden"
+              />
+            </label>
           </div>
+
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Dr. {formData.name || 'Practitioner'}</h1>
-            <p className="text-xs text-emerald-700 font-semibold">{formData.specialization} • Licensed Practitioner</p>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-slate-900">Dr. {formData.name || 'Practitioner'}</h1>
+              {photoUrl ? (
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                  Photo Uploaded
+                </span>
+              ) : (
+                <span className="text-[11px] font-medium text-slate-500 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">
+                  No Photo Uploaded
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-emerald-700 font-semibold mt-0.5">{formData.specialization} • Licensed Practitioner</p>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Click the camera icon to upload your profile photo anytime.
+            </p>
           </div>
         </div>
 
@@ -234,14 +344,14 @@ export const DoctorProfilePage = () => {
 
             <div>
               <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-                Consultation Fee ($ USD)
+                Consultation Fee (₹ INR)
               </label>
               <input
                 type="number"
                 name="consultationFee"
                 value={formData.consultationFee}
                 onChange={handleChange}
-                placeholder="50"
+                placeholder="500"
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600"
               />
             </div>

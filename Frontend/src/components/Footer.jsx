@@ -14,7 +14,7 @@ export const Footer = () => {
                 <Heart className="h-5 w-5 fill-white" />
               </div>
               <span className="text-xl font-bold text-white tracking-tight">
-                Care<span className="text-emerald-500">Connect</span>
+                Medi<span className="text-emerald-500">Q</span>
               </span>
             </div>
             <p className="text-sm text-slate-400 leading-relaxed">

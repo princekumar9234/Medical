@@ -23,6 +23,27 @@ import Modal from '../../../components/ui/Modal';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import toast from 'react-hot-toast';
 
+// Helper to resolve uploaded profile photo URL
+const getProfileImageUrl = (photo) => {
+  if (!photo) return null;
+  if (photo.startsWith('http://') || photo.startsWith('https://') || photo.startsWith('blob:') || photo.startsWith('data:')) {
+    return photo;
+  }
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  const backendOrigin = apiBase.replace(/\/api\/?$/, '');
+  const cleanPath = photo.startsWith('/') ? photo.slice(1) : photo;
+  return `${backendOrigin}/${cleanPath}`;
+};
+
+// Helper to get doctor initials
+const getInitials = (name = '') => {
+  const clean = name.replace(/^Dr\.\s*/i, '').trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'DR';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
 export const DoctorPublicProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -72,7 +93,7 @@ export const DoctorPublicProfilePage = () => {
           fullName: u?.fullName || rawDoc?.name || 'Doctor',
           specialization: p?.specialization || rawDoc?.specialization || 'General Medicine',
           hospitalAffiliation: w[0]?.hospitalName || p?.city || rawDoc?.hospitalAffiliation || 'CareConnect Partner Network',
-          consultationFee: p?.consultationFee ?? rawDoc?.consultationFee ?? 50,
+          consultationFee: p?.consultationFee ?? rawDoc?.consultationFee ?? 500,
           experienceYears: p?.yearsOfExperience ?? rawDoc?.experienceYears ?? 0,
           averageRating: p?.rating || rawDoc?.averageRating || 4.9,
           totalReviews: p?.reviewCount || rawDoc?.totalReviews || 0,
@@ -168,11 +189,27 @@ export const DoctorPublicProfilePage = () => {
       {/* Top Profile Summary Card */}
       <div className="bg-white rounded-3xl border border-slate-200/90 shadow-xs p-6 sm:p-8">
         <div className="flex flex-col md:flex-row items-start gap-6">
-          <img
-            src={doctor.profileImage || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300'}
-            alt={doctor.name}
-            className="h-28 w-28 sm:h-32 sm:w-32 rounded-2xl object-cover border border-slate-200 shadow-xs shrink-0"
-          />
+          {doctor.profileImage ? (
+            <img
+              src={getProfileImageUrl(doctor.profileImage)}
+              alt={doctor.name}
+              className="h-28 w-28 sm:h-32 sm:w-32 rounded-2xl object-cover border border-slate-200 shadow-xs shrink-0"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                if (e.currentTarget.nextElementSibling) {
+                  e.currentTarget.nextElementSibling.style.display = 'flex';
+                }
+              }}
+            />
+          ) : null}
+          <div
+            className={`h-28 w-28 sm:h-32 sm:w-32 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-50 border border-emerald-200 text-emerald-800 font-bold text-2xl sm:text-3xl flex flex-col items-center justify-center shadow-xs shrink-0 ${
+              doctor.profileImage ? 'hidden' : 'flex'
+            }`}
+          >
+            <Stethoscope className="h-8 w-8 text-emerald-600 mb-1 opacity-80" />
+            <span>{getInitials(doctor.name)}</span>
+          </div>
 
           <div className="flex-1 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -211,7 +248,7 @@ export const DoctorPublicProfilePage = () => {
           <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 text-center min-w-[200px] w-full md:w-auto">
             <span className="text-xs text-slate-500 font-medium">Consultation Fee</span>
             <p className="text-3xl font-extrabold text-emerald-700 my-1">
-              ${doctor.consultationFee || 50}
+              ₹{doctor.consultationFee ?? 500}
             </p>
             <p className="text-[11px] text-slate-400 mb-3">Includes digital prescription &amp; follow-up chat</p>
             
@@ -449,7 +486,7 @@ export const DoctorPublicProfilePage = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Consultation Fee:</span>
-                  <span className="font-bold text-emerald-700">${doctor.consultationFee || 50}</span>
+                  <span className="font-bold text-emerald-700">₹{doctor.consultationFee ?? 500}</span>
                 </div>
               </div>
 

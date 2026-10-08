@@ -44,8 +44,8 @@ export const LandingPage = () => {
       experience: '12 yrs exp',
       rating: 4.9,
       reviews: 142,
-      fee: '$75',
-      image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300',
+      fee: '₹750',
+      image: '',
     },
     {
       id: 'doc-2',
@@ -55,8 +55,8 @@ export const LandingPage = () => {
       experience: '9 yrs exp',
       rating: 4.8,
       reviews: 98,
-      fee: '$50',
-      image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300',
+      fee: '₹500',
+      image: '',
     },
     {
       id: 'doc-3',
@@ -66,8 +66,8 @@ export const LandingPage = () => {
       experience: '11 yrs exp',
       rating: 4.95,
       reviews: 210,
-      fee: '$85',
-      image: 'https://images.unsplash.com/photo-1594824813637-67c4e51145b2?auto=format&fit=crop&q=80&w=300',
+      fee: '₹850',
+      image: '',
     },
     {
       id: 'doc-4',
@@ -77,8 +77,8 @@ export const LandingPage = () => {
       experience: '15 yrs exp',
       rating: 4.9,
       reviews: 175,
-      fee: '$65',
-      image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300',
+      fee: '₹650',
+      image: '',
     },
   ];
 
@@ -192,7 +192,7 @@ export const LandingPage = () => {
                   </div>
                   <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between text-xs">
                     <span className="text-slate-600">Consultation Fee</span>
-                    <span className="font-bold text-emerald-700">$75.00</span>
+                    <span className="font-bold text-emerald-700">₹750</span>
                   </div>
                   <div className="p-3 bg-slate-50 rounded-xl flex items-center justify-between text-xs">
                     <span className="text-slate-600">Patient Satisfaction</span>
@@ -372,11 +372,17 @@ export const LandingPage = () => {
             >
               <div className="p-5">
                 <div className="flex items-center gap-3.5 mb-4">
-                  <img
-                    src={doc.image}
-                    alt={doc.name}
-                    className="h-14 w-14 rounded-full object-cover border-2 border-emerald-500/20"
-                  />
+                  {doc.image ? (
+                    <img
+                      src={doc.image}
+                      alt={doc.name}
+                      className="h-14 w-14 rounded-full object-cover border-2 border-emerald-500/20"
+                    />
+                  ) : (
+                    <div className="h-14 w-14 rounded-full bg-emerald-100 text-emerald-800 font-bold text-sm flex items-center justify-center shrink-0 border-2 border-emerald-500/20">
+                      {doc.name.replace(/^Dr\.\s*/i, '').charAt(0)}
+                    </div>
+                  )}
                   <div>
                     <h4 className="text-sm font-bold text-slate-900 leading-tight">
                       {doc.name}

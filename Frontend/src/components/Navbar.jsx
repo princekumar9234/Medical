@@ -122,7 +122,7 @@ export const Navbar = () => {
               </div>
               <div className="flex flex-col">
                 <span className="text-xl font-bold tracking-tight text-slate-900 leading-none">
-                  Care<span className="text-emerald-600">Connect</span>
+                  Medi<span className="text-emerald-600">Q</span>
                 </span>
                 <span className="text-[10px] text-slate-400 font-medium tracking-wide uppercase mt-0.5">
                   Healthcare Platform
@@ -225,7 +225,7 @@ export const Navbar = () => {
                           onClick={() => setNotificationsOpen(false)}
                           className="text-xs text-emerald-600 hover:underline"
                         >
-                          View all
+                          View all  
                         </Link>
                       </div>
                       <div className="max-h-64 overflow-y-auto divide-y divide-slate-100">

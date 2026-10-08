@@ -59,7 +59,7 @@ const register = async (req, res, next) => {
         specialization: specialization || 'General Medicine',
         qualifications: qualification || qualifications || 'MBBS / Medical Degree',
         yearsOfExperience: Number(experienceYears) || 0,
-        consultationFee: Number(consultationFee) || 50,
+        consultationFee: Number(consultationFee) || 500,
         registrationNumber: licenseNumber || `REG-${Math.floor(100000 + Math.random() * 900000)}`,
         experience: hospitalAffiliation
           ? [{ hospital: hospitalAffiliation, position: 'Practicing Physician', startYear: 2020, isCurrent: true }]
@@ -109,7 +109,12 @@ const register = async (req, res, next) => {
 // ─────────────────────────────────────────────
 const verifyEmail = async (req, res, next) => {
   try {
-    const { token } = req.params;
+    const token = req.params.token || req.query.token;
+
+    if (!token) {
+      return errorResponse(res, 'Email verification token is missing.', 400);
+    }
+
     const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
 
     const user = await User.findOne({
@@ -126,7 +131,20 @@ const verifyEmail = async (req, res, next) => {
     user.emailVerificationExpires = undefined;
     await user.save();
 
-    return successResponse(res, 'Email verified successfully! You can now log in.', null, 200);
+    return successResponse(
+      res,
+      'Email verified successfully! You can now log in.',
+      {
+        user: {
+          id: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          role: user.role,
+          isEmailVerified: true,
+        },
+      },
+      200
+    );
   } catch (error) {
     next(error);
   }

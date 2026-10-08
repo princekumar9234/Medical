@@ -16,6 +16,27 @@ import { useAuth } from '../../auth/Auth.context';
 import Button from '../../../components/ui/Button';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
+// Helper to resolve uploaded profile photo URL
+const getProfileImageUrl = (photo) => {
+  if (!photo) return null;
+  if (photo.startsWith('http://') || photo.startsWith('https://') || photo.startsWith('blob:') || photo.startsWith('data:')) {
+    return photo;
+  }
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+  const backendOrigin = apiBase.replace(/\/api\/?$/, '');
+  const cleanPath = photo.startsWith('/') ? photo.slice(1) : photo;
+  return `${backendOrigin}/${cleanPath}`;
+};
+
+// Helper to get doctor initials
+const getInitials = (name = '') => {
+  const clean = name.replace(/^Dr\.\s*/i, '').trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'DR';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
 export const DoctorSearchPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -63,7 +84,7 @@ export const DoctorSearchPage = () => {
         fullName: d.fullName || d.name || 'Doctor',
         specialization: d.specialization || 'Healthcare Practitioner',
         hospitalAffiliation: d.hospital || d.city || 'CareConnect Partner Network',
-        consultationFee: d.consultationFee ?? 50,
+        consultationFee: d.consultationFee ?? 500,
         experienceYears: d.yearsOfExperience ?? d.experienceYears ?? 0,
         averageRating: d.averageRating || 4.9,
         totalReviews: d.totalReviews || 0,
@@ -162,10 +183,12 @@ export const DoctorSearchPage = () => {
               className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:outline-none focus:border-emerald-600 cursor-pointer"
             >
               <option value="">Any Consultation Fee</option>
-              <option value="50">Up to $50</option>
-              <option value="75">Up to $75</option>
-              <option value="100">Up to $100</option>
-              <option value="150">Up to $150</option>
+              <option value="300">Up to ₹300</option>
+              <option value="500">Up to ₹500</option>
+              <option value="800">Up to ₹800</option>
+              <option value="1000">Up to ₹1,000</option>
+              <option value="1500">Up to ₹1,500</option>
+              <option value="2500">Up to ₹2,500</option>
             </select>
 
             {/* Sort by */}
@@ -218,11 +241,27 @@ export const DoctorSearchPage = () => {
                 
                 {/* Doctor basic profile */}
                 <div className="flex items-start gap-3 sm:gap-4">
-                  <img
-                    src={doctor.profileImage || 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=200'}
-                    alt={doctor.name}
-                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-cover border border-slate-200 shrink-0"
-                  />
+                  {doctor.profileImage ? (
+                    <img
+                      src={getProfileImageUrl(doctor.profileImage)}
+                      alt={doctor.name}
+                      className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-cover border border-slate-200 shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        if (e.currentTarget.nextElementSibling) {
+                          e.currentTarget.nextElementSibling.style.display = 'flex';
+                        }
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    className={`h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-50 border border-emerald-200 text-emerald-800 font-bold text-lg sm:text-xl flex flex-col items-center justify-center shrink-0 shadow-xs ${
+                      doctor.profileImage ? 'hidden' : 'flex'
+                    }`}
+                  >
+                    <Stethoscope className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 mb-0.5 opacity-80" />
+                    <span>{getInitials(doctor.name)}</span>
+                  </div>
                   <div className="space-y-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-tight">
@@ -267,7 +306,7 @@ export const DoctorSearchPage = () => {
                     <div>
                       <span className="text-xs text-slate-400 font-normal block">Fee</span>
                       <p className="text-base font-bold text-emerald-700">
-                        ${doctor.consultationFee || 50}
+                        ₹{doctor.consultationFee ?? 500}
                       </p>
                     </div>
                   </div>

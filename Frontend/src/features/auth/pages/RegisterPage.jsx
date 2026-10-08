@@ -77,7 +77,7 @@ export const RegisterPage = () => {
         payload.specialization = formData.specialization || 'General Medicine';
         payload.qualification = 'MBBS / Medical Degree';
         payload.licenseNumber = formData.licenseNumber || `MD-${Math.floor(100000 + Math.random() * 900000)}`;
-        payload.consultationFee = Number(formData.consultationFee) || 50;
+        payload.consultationFee = Number(formData.consultationFee) || 500;
         payload.experienceYears = Number(formData.experienceYears) || 3;
         payload.hospitalAffiliation = formData.hospitalAffiliation;
       }
@@ -112,7 +112,7 @@ export const RegisterPage = () => {
               <Heart className="h-6 w-6 fill-white" />
             </div>
             <span className="text-2xl font-bold tracking-tight text-slate-900">
-              Care<span className="text-emerald-600">Connect</span>
+              Medi<span className="text-emerald-600">Q</span>
             </span>
           </Link>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
@@ -149,7 +149,7 @@ export const RegisterPage = () => {
               }`}
             >
               <Stethoscope className="h-4 w-4 text-emerald-600" />
-              I'm a Healthcare Practitioner
+              I'm a Doctor
             </button>
           </div>
 
@@ -290,12 +290,13 @@ export const RegisterPage = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                      Consultation Fee ($)
+                      Consultation Fee (₹ INR)
                     </label>
                     <input
                       type="number"
                       name="consultationFee"
-                      min="10"
+                      min="0"
+                      placeholder="500"
                       value={formData.consultationFee}
                       onChange={handleChange}
                       className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600/30 focus:border-emerald-600 transition-colors"
