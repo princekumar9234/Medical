@@ -106,14 +106,22 @@ const verifyEmail = async (req, res, next) => {
   try {
     // Accept token from path param or query string, and clean it
     const rawToken = req.params.token || req.query.token;
-    const queryEmail = req.query.email ? decodeURIComponent(req.query.email).trim().toLowerCase() : null;
+    const queryEmail = (req.query.email || req.body?.email)
+      ? decodeURIComponent(req.query.email || req.body?.email).trim().toLowerCase()
+      : null;
     const queryOtp = req.query.otp || req.body?.otp;
 
     // ── OTP-based verification path ───────────────────────────────────
     if (queryOtp && queryEmail) {
-      const userByEmail = await User.findOne({ email: queryEmail }).select(
-        '+emailVerificationOtp +emailVerificationExpires'
+      let userByEmail = await User.findOne({ email: queryEmail }).select(
+        '+emailVerificationOtp +emailVerificationExpires +isEmailVerified +fullName +role'
       );
+
+      if (!userByEmail) {
+        userByEmail = await User.findOne({ email: new RegExp(`^${queryEmail}$`, 'i') }).select(
+          '+emailVerificationOtp +emailVerificationExpires +isEmailVerified +fullName +role'
+        );
+      }
 
       if (!userByEmail) {
         return errorResponse(res, 'No account found with this email address.', 404);
@@ -131,16 +139,18 @@ const verifyEmail = async (req, res, next) => {
         }, 200);
       }
 
-      console.log(`[OTP Debug] Email: ${queryEmail}`);
-      console.log(`[OTP Debug] Stored OTP: "${userByEmail.emailVerificationOtp}"`);
-      console.log(`[OTP Debug] Submitted OTP: "${String(queryOtp).trim()}"`);
-      console.log(`[OTP Debug] Match: ${userByEmail.emailVerificationOtp === String(queryOtp).trim()}`);
-      console.log(`[OTP Debug] Expires: ${userByEmail.emailVerificationExpires}`);
+      const cleanOtp = String(queryOtp).replace(/\s+/g, '').trim();
+      const storedOtp = String(userByEmail.emailVerificationOtp || '').replace(/\s+/g, '').trim();
 
-      if (!userByEmail.emailVerificationOtp || userByEmail.emailVerificationOtp !== String(queryOtp).trim()) {
+      console.log(`[OTP Debug] Email: ${queryEmail}`);
+      console.log(`[OTP Debug] Stored OTP: "${storedOtp}" | Length: ${storedOtp.length}`);
+      console.log(`[OTP Debug] Submitted OTP: "${cleanOtp}" | Length: ${cleanOtp.length}`);
+      console.log(`[OTP Debug] Match: ${storedOtp === cleanOtp}`);
+      console.log(`[OTP Debug] Expires: ${userByEmail.emailVerificationExpires} (Now: ${new Date().toISOString()})`);
+
+      if (!storedOtp || storedOtp !== cleanOtp) {
         return errorResponse(res, 'Invalid verification code. Please check your email and try again.', 400);
       }
-
 
       if (userByEmail.emailVerificationExpires && userByEmail.emailVerificationExpires < Date.now()) {
         return errorResponse(res, 'Verification code has expired. Please request a new one.', 400);
@@ -152,7 +162,7 @@ const verifyEmail = async (req, res, next) => {
       userByEmail.emailVerificationExpires = undefined;
       await userByEmail.save();
 
-      console.log(`[verifyEmail] OTP verified email for user: ${userByEmail.email}`);
+      console.log(`[verifyEmail] ✅ OTP verified email successfully for: ${userByEmail.email}`);
       return successResponse(res, 'Email verified successfully! You can now log in.', {
         user: {
           id: userByEmail._id,
