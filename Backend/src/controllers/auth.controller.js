@@ -312,18 +312,13 @@ const resendVerificationEmail = async (req, res, next) => {
     console.log(`[Resend] Generated OTP: ${otp} for ${email}`);
 
     // Send email - await to catch errors properly
-    sendVerificationEmail(email, user.fullName, token, otp)
-      .then((result) => {
-        if (result.success) {
-          console.log(`[Resend] ✅ Email sent to ${email}`);
-        } else {
-          console.error(`[Resend] ❌ Email failed: ${result.error}`);
-        }
-      })
-      .catch((emailErr) => {
-        console.error('[Resend] Email error:', emailErr.message);
-      });
+    const emailResult = await sendVerificationEmail(email, user.fullName, token, otp);
+    if (!emailResult.success) {
+      console.error(`[Resend] ❌ Email sending failed for ${email}: ${emailResult.error}`);
+      return errorResponse(res, `Failed to send email: ${emailResult.error}`, 500);
+    }
 
+    console.log(`[Resend] ✅ Email sent to ${email} with OTP: ${otp}`);
     return successResponse(res, 'Verification email sent. Please check your inbox.', null, 200);
   } catch (error) {
     next(error);
