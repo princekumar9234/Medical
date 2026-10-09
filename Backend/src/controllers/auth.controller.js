@@ -73,12 +73,10 @@ const register = async (req, res, next) => {
       });
     }
 
-    // Send verification email
-    try {
-      await sendVerificationEmail(email, actualFullName, verificationToken);
-    } catch (emailErr) {
-      console.error('Email send failed:', emailErr.message);
-    }
+    // Send verification email in background without blocking HTTP response
+    sendVerificationEmail(email, actualFullName, verificationToken).catch((emailErr) => {
+      console.error('[Register] Background email send failed:', emailErr.message);
+    });
 
     return successResponse(
       res,
@@ -250,7 +248,10 @@ const resendVerificationEmail = async (req, res, next) => {
     const token = user.generateEmailVerificationToken();
     await user.save();
 
-    await sendVerificationEmail(email, user.fullName, token);
+    // Send in background without blocking response
+    sendVerificationEmail(email, user.fullName, token).catch((emailErr) => {
+      console.error('[Resend] Verification email error:', emailErr.message);
+    });
 
     return successResponse(res, 'Verification email sent. Please check your inbox.', null, 200);
   } catch (error) {
@@ -288,11 +289,10 @@ const login = async (req, res, next) => {
       const tokenToSend = userWithToken.generateEmailVerificationToken();
       await userWithToken.save();
 
-      try {
-        await sendVerificationEmail(user.email, user.fullName, tokenToSend);
-      } catch (emailErr) {
+      // Send verification email in background without blocking response
+      sendVerificationEmail(user.email, user.fullName, tokenToSend).catch((emailErr) => {
         console.error('Email send failed on unverified login attempt:', emailErr.message);
-      }
+      });
 
       return res.status(403).json({
         success: false,
