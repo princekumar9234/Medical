@@ -131,9 +131,16 @@ const verifyEmail = async (req, res, next) => {
         }, 200);
       }
 
+      console.log(`[OTP Debug] Email: ${queryEmail}`);
+      console.log(`[OTP Debug] Stored OTP: "${userByEmail.emailVerificationOtp}"`);
+      console.log(`[OTP Debug] Submitted OTP: "${String(queryOtp).trim()}"`);
+      console.log(`[OTP Debug] Match: ${userByEmail.emailVerificationOtp === String(queryOtp).trim()}`);
+      console.log(`[OTP Debug] Expires: ${userByEmail.emailVerificationExpires}`);
+
       if (!userByEmail.emailVerificationOtp || userByEmail.emailVerificationOtp !== String(queryOtp).trim()) {
         return errorResponse(res, 'Invalid verification code. Please check your email and try again.', 400);
       }
+
 
       if (userByEmail.emailVerificationExpires && userByEmail.emailVerificationExpires < Date.now()) {
         return errorResponse(res, 'Verification code has expired. Please request a new one.', 400);
@@ -332,16 +339,27 @@ const login = async (req, res, next) => {
     // Enforce email verification: User cannot log in unless email is verified
     if (!user.isEmailVerified) {
       const userWithToken = await User.findById(user._id).select(
-        '+emailVerificationToken +emailVerificationExpires'
+        '+emailVerificationToken +emailVerificationExpires +emailVerificationOtp'
       );
 
-      const { token: tokenToSend, otp: otpToSend } = userWithToken.generateEmailVerificationToken();
-      await userWithToken.save();
+      // Only generate a new OTP if none exists or existing one is expired
+      const otpExpired = !userWithToken.emailVerificationExpires || userWithToken.emailVerificationExpires < Date.now();
+      const hasValidOtp = userWithToken.emailVerificationOtp && !otpExpired;
 
-      // Send verification email in background without blocking response
-      sendVerificationEmail(user.email, user.fullName, tokenToSend, otpToSend).catch((emailErr) => {
-        console.error('Email send failed on unverified login attempt:', emailErr.message);
-      });
+      if (!hasValidOtp) {
+        // Generate fresh OTP + token
+        const { token: tokenToSend, otp: otpToSend } = userWithToken.generateEmailVerificationToken();
+        await userWithToken.save();
+
+        // Send new verification email in background
+        sendVerificationEmail(user.email, user.fullName, tokenToSend, otpToSend).catch((emailErr) => {
+          console.error('Email send failed on unverified login attempt:', emailErr.message);
+        });
+        console.log(`[Login] New OTP generated for ${user.email} (previous was expired/missing)`);
+      } else {
+        console.log(`[Login] Valid OTP still exists for ${user.email} - NOT regenerating`);
+      }
+
 
       return res.status(403).json({
         success: false,
