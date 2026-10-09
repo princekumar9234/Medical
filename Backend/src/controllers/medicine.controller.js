@@ -19,8 +19,8 @@ const searchByBarcodeController = async (req, res, next) => {
       return errorResponse(res, 'Barcode is required. Please provide a valid barcode number.', 400);
     }
 
-    // Sanitize barcode (allow alphanumeric and hyphens, typically 4-30 chars)
-    if (!/^[A-Za-z0-9\-_]{3,30}$/.test(barcode)) {
+    // Sanitize barcode (allow alphanumeric, hyphens, parentheses, colons up to 80 chars for GS1 DataMatrix)
+    if (!/^[A-Za-z0-9\-_.():/]{3,80}$/.test(barcode)) {
       return errorResponse(res, 'Invalid barcode format. Please check the code and try again.', 400);
     }
 

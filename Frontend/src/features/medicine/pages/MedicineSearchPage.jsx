@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Search, 
   Pill, 
@@ -280,11 +280,34 @@ export const MedicineSearchPage = () => {
     await lookupBarcode(barcodeInput.trim());
   };
 
+  // Helper to extract clean GTIN/barcode from GS1 DataMatrix or QR code string
+  const extractBarcodeFromScan = (raw) => {
+    if (!raw) return '';
+    const str = String(raw).trim();
+    // 1. GS1 format with (01) GTIN identifier e.g. (01)08901117001423
+    const matchParen = str.match(/\(01\)(\d{12,14})/);
+    if (matchParen) return matchParen[1];
+
+    // 2. GS1 raw string starting with 01 followed by 14 digits e.g. 0108901117001423...
+    const matchRaw = str.match(/^01(\d{13,14})/);
+    if (matchRaw) return matchRaw[1];
+
+    // 3. URLs with barcode at the end
+    if (str.startsWith('http://') || str.startsWith('https://')) {
+      const parts = str.split('/');
+      const last = parts[parts.length - 1];
+      if (last && /^\d+$/.test(last)) return last;
+    }
+
+    return str;
+  };
+
   // 4. Scanner Modal Callback
   const handleScanSuccess = async (scannedBarcode) => {
     setIsScannerOpen(false);
-    setBarcodeInput(scannedBarcode);
-    await lookupBarcode(scannedBarcode);
+    const cleanCode = extractBarcodeFromScan(scannedBarcode);
+    setBarcodeInput(cleanCode);
+    await lookupBarcode(cleanCode);
   };
 
   const displayList = medicines.length > 0 ? medicines : defaultMedicines;
