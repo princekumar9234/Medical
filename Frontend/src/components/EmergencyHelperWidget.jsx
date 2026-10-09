@@ -36,7 +36,7 @@ export default function EmergencyHelperWidget() {
   };
 
   return (
-    <aside aria-label="Emergency Medical Assistance" className="fixed bottom-6 right-6 z-50 select-none">
+    <aside aria-label="Emergency Medical Assistance" className="fixed bottom-6 right-6 z-40 select-none">
       {/* ── EXPANDED EMERGENCY POPUP CARD ── */}
       {isOpen ? (
         <div className="w-[360px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-red-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
