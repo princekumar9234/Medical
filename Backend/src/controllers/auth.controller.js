@@ -49,7 +49,7 @@ const register = async (req, res, next) => {
       password,
       role: actualRole,
     });
-    const verificationToken = user.generateEmailVerificationToken();
+    const { token: verificationToken, otp: verificationOtp } = user.generateEmailVerificationToken();
     await user.save();
 
     // Create role-specific profile
@@ -73,8 +73,8 @@ const register = async (req, res, next) => {
       });
     }
 
-    // Send verification email in background without blocking HTTP response
-    sendVerificationEmail(email, actualFullName, verificationToken).catch((emailErr) => {
+    // Send verification email in background (OTP + link) without blocking HTTP response
+    sendVerificationEmail(email, actualFullName, verificationToken, verificationOtp).catch((emailErr) => {
       console.error('[Register] Background email send failed:', emailErr.message);
     });
 
@@ -107,6 +107,55 @@ const verifyEmail = async (req, res, next) => {
     // Accept token from path param or query string, and clean it
     const rawToken = req.params.token || req.query.token;
     const queryEmail = req.query.email ? decodeURIComponent(req.query.email).trim().toLowerCase() : null;
+    const queryOtp = req.query.otp || req.body?.otp;
+
+    // ── OTP-based verification path ───────────────────────────────────
+    if (queryOtp && queryEmail) {
+      const userByEmail = await User.findOne({ email: queryEmail }).select(
+        '+emailVerificationOtp +emailVerificationExpires'
+      );
+
+      if (!userByEmail) {
+        return errorResponse(res, 'No account found with this email address.', 404);
+      }
+
+      if (userByEmail.isEmailVerified) {
+        return successResponse(res, 'Email is already verified! You can now log in.', {
+          user: {
+            id: userByEmail._id,
+            fullName: userByEmail.fullName,
+            email: userByEmail.email,
+            role: userByEmail.role,
+            isEmailVerified: true,
+          },
+        }, 200);
+      }
+
+      if (!userByEmail.emailVerificationOtp || userByEmail.emailVerificationOtp !== String(queryOtp).trim()) {
+        return errorResponse(res, 'Invalid verification code. Please check your email and try again.', 400);
+      }
+
+      if (userByEmail.emailVerificationExpires && userByEmail.emailVerificationExpires < Date.now()) {
+        return errorResponse(res, 'Verification code has expired. Please request a new one.', 400);
+      }
+
+      userByEmail.isEmailVerified = true;
+      userByEmail.emailVerificationOtp = undefined;
+      userByEmail.emailVerificationToken = undefined;
+      userByEmail.emailVerificationExpires = undefined;
+      await userByEmail.save();
+
+      console.log(`[verifyEmail] OTP verified email for user: ${userByEmail.email}`);
+      return successResponse(res, 'Email verified successfully! You can now log in.', {
+        user: {
+          id: userByEmail._id,
+          fullName: userByEmail.fullName,
+          email: userByEmail.email,
+          role: userByEmail.role,
+          isEmailVerified: true,
+        },
+      }, 200);
+    }
 
     if (!rawToken) {
       if (queryEmail) {
@@ -245,11 +294,11 @@ const resendVerificationEmail = async (req, res, next) => {
       return errorResponse(res, 'This email is already verified.', 400);
     }
 
-    const token = user.generateEmailVerificationToken();
+    const { token, otp } = user.generateEmailVerificationToken();
     await user.save();
 
     // Send in background without blocking response
-    sendVerificationEmail(email, user.fullName, token).catch((emailErr) => {
+    sendVerificationEmail(email, user.fullName, token, otp).catch((emailErr) => {
       console.error('[Resend] Verification email error:', emailErr.message);
     });
 
@@ -286,11 +335,11 @@ const login = async (req, res, next) => {
         '+emailVerificationToken +emailVerificationExpires'
       );
 
-      const tokenToSend = userWithToken.generateEmailVerificationToken();
+      const { token: tokenToSend, otp: otpToSend } = userWithToken.generateEmailVerificationToken();
       await userWithToken.save();
 
       // Send verification email in background without blocking response
-      sendVerificationEmail(user.email, user.fullName, tokenToSend).catch((emailErr) => {
+      sendVerificationEmail(user.email, user.fullName, tokenToSend, otpToSend).catch((emailErr) => {
         console.error('Email send failed on unverified login attempt:', emailErr.message);
       });
 

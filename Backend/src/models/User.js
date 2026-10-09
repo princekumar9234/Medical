@@ -46,6 +46,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       select: false,
     },
+    emailVerificationOtp: {
+      type: String,
+      select: false,
+    },
     emailVerificationExpires: {
       type: Date,
       select: false,
@@ -86,12 +90,14 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Generate email verification token
+// Generate email verification token and 6-digit OTP
 userSchema.methods.generateEmailVerificationToken = function () {
   const token = crypto.randomBytes(32).toString('hex');
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
   this.emailVerificationToken = crypto.createHash('sha256').update(token).digest('hex');
+  this.emailVerificationOtp = otp;
   this.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-  return token;
+  return { token, otp };
 };
 
 // Generate password reset token
