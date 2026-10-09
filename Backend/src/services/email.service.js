@@ -1,14 +1,21 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
+
+// Force Node to resolve IPv4 addresses first (fixes Railway connect ENETUNREACH IPv6 issue)
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 /**
  * Create Gmail SMTP transporter using port 465 (SSL)
- * Port 465 SSL works on Railway/cloud unlike 587 TLS
+ * Port 465 SSL + IPv4 (family: 4) works reliably on Railway/cloud platforms
  */
 const createTransporter = () => {
   return nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 465,
-    secure: true, // SSL - more reliable on cloud platforms
+    secure: true, // SSL
+    family: 4,    // Force IPv4 network socket (prevents ENETUNREACH on IPv6)
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
