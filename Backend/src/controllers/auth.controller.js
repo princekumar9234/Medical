@@ -289,8 +289,13 @@ const verifyEmail = async (req, res, next) => {
 const resendVerificationEmail = async (req, res, next) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email }).select(
-      '+emailVerificationToken +emailVerificationExpires'
+
+    if (!email) {
+      return errorResponse(res, 'Email is required.', 400);
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() }).select(
+      '+emailVerificationToken +emailVerificationExpires +emailVerificationOtp'
     );
 
     if (!user) {
@@ -304,16 +309,27 @@ const resendVerificationEmail = async (req, res, next) => {
     const { token, otp } = user.generateEmailVerificationToken();
     await user.save();
 
-    // Send in background without blocking response
-    sendVerificationEmail(email, user.fullName, token, otp).catch((emailErr) => {
-      console.error('[Resend] Verification email error:', emailErr.message);
-    });
+    console.log(`[Resend] Generated OTP: ${otp} for ${email}`);
+
+    // Send email - await to catch errors properly
+    sendVerificationEmail(email, user.fullName, token, otp)
+      .then((result) => {
+        if (result.success) {
+          console.log(`[Resend] ✅ Email sent to ${email}`);
+        } else {
+          console.error(`[Resend] ❌ Email failed: ${result.error}`);
+        }
+      })
+      .catch((emailErr) => {
+        console.error('[Resend] Email error:', emailErr.message);
+      });
 
     return successResponse(res, 'Verification email sent. Please check your inbox.', null, 200);
   } catch (error) {
     next(error);
   }
 };
+
 
 // ─────────────────────────────────────────────
 // LOGIN
