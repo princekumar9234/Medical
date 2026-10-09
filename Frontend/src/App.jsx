@@ -6,6 +6,7 @@ import { ProtectedRoute, DoctorRoute, PatientRoute, PublicRoute } from './compon
 // Layout
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import EmergencyHelperWidget from './components/EmergencyHelperWidget';
 
 // Public Pages
 import LandingPage from './pages/LandingPage';
@@ -104,6 +105,8 @@ export function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
+
+          <EmergencyHelperWidget />
 
           <Footer />
 
