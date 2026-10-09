@@ -41,15 +41,15 @@ const register = async (req, res, next) => {
     // Clean phone
     const cleanPhone = phone && phone.trim() ? phone.trim() : undefined;
 
-    // Create user
+    // Create user with verified email by default
     const user = new User({
       fullName: actualFullName,
       email,
       phone: cleanPhone,
       password,
       role: actualRole,
+      isEmailVerified: true,
     });
-    const { token: verificationToken, otp: verificationOtp } = user.generateEmailVerificationToken();
     await user.save();
 
     // Create role-specific profile
@@ -73,22 +73,20 @@ const register = async (req, res, next) => {
       });
     }
 
-    // Send verification email in background (OTP + link) without blocking HTTP response
-    sendVerificationEmail(email, actualFullName, verificationToken, verificationOtp).catch((emailErr) => {
-      console.error('[Register] Background email send failed:', emailErr.message);
-    });
+    // Generate token for instant login
+    const token = generateToken(user._id, user.role, user.tokenVersion);
 
     return successResponse(
       res,
-      'Registration successful! A verification link has been sent to your email. Please verify your email before logging in.',
+      'Registration successful! Welcome to MediQ.',
       {
-        requiresEmailVerification: true,
+        token,
         user: {
           id: user._id,
           fullName: user.fullName,
           email: user.email,
           role: user.role,
-          isEmailVerified: false,
+          isEmailVerified: true,
           profilePhoto: user.profilePhoto,
         },
       },
@@ -357,38 +355,9 @@ const login = async (req, res, next) => {
       return errorResponse(res, 'Your account has been deactivated. Please contact support.', 403);
     }
 
-    // Enforce email verification: User cannot log in unless email is verified
+    // If user's email was not marked verified previously, auto-verify it now
     if (!user.isEmailVerified) {
-      const userWithToken = await User.findById(user._id).select(
-        '+emailVerificationToken +emailVerificationExpires +emailVerificationOtp'
-      );
-
-      // Only generate a new OTP if none exists or existing one is expired
-      const otpExpired = !userWithToken.emailVerificationExpires || userWithToken.emailVerificationExpires < Date.now();
-      const hasValidOtp = userWithToken.emailVerificationOtp && !otpExpired;
-
-      if (!hasValidOtp) {
-        // Generate fresh OTP + token
-        const { token: tokenToSend, otp: otpToSend } = userWithToken.generateEmailVerificationToken();
-        await userWithToken.save();
-
-        // Send new verification email in background
-        sendVerificationEmail(user.email, user.fullName, tokenToSend, otpToSend).catch((emailErr) => {
-          console.error('Email send failed on unverified login attempt:', emailErr.message);
-        });
-        console.log(`[Login] New OTP generated for ${user.email} (previous was expired/missing)`);
-      } else {
-        console.log(`[Login] Valid OTP still exists for ${user.email} - NOT regenerating`);
-      }
-
-
-      return res.status(403).json({
-        success: false,
-        requiresEmailVerification: true,
-        message:
-          'Your email is not verified. A verification link has been sent to your email. Please verify your email before logging in.',
-        data: { email: user.email },
-      });
+      user.isEmailVerified = true;
     }
 
     // Clean up verification tokens on successful login if they were kept

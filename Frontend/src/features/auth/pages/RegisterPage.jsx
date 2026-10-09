@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Heart, User, Stethoscope, Mail, Lock, Phone, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../Auth.context';
@@ -85,15 +85,13 @@ export const RegisterPage = () => {
       const result = await registerUser(payload);
 
       if (result.success) {
-        // Registration successful — backend requires email verification before login
-        // Redirect to verify-email page with email pre-filled
-        setSuccess('Account created! Please check your email to verify your account.');
+        setSuccess('Account created successfully! Redirecting to dashboard...');
+        const userRole = (result.data?.user?.role || role || '').toLowerCase();
         setTimeout(() => {
-          navigate(`/verify-email?email=${encodeURIComponent(formData.email.trim())}`, {
+          navigate(userRole === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard', {
             replace: true,
-            state: { requiresEmailVerification: true, email: formData.email.trim() },
           });
-        }, 1000);
+        }, 600);
       } else {
         setError(result.message || 'Registration failed. Please try again.');
       }
