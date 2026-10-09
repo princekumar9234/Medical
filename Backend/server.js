@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 const http = require('http');
 const { Server } = require('socket.io');
 const connectDB = require('./src/config/database');
@@ -14,7 +14,10 @@ const server = http.createServer(app);
 // ─────────────────────────────────────────────
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: (origin, callback) => {
+      // Allow requests from all origins (including Vercel & localhost)
+      callback(null, true);
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },
