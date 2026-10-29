@@ -25,7 +25,7 @@ export default function EmergencyHelperWidget() {
     return null;
   }
 
-  const EMERGENCY_PHONE = '923409640';
+  const EMERGENCY_PHONE = '9234096840';
   const EMERGENCY_EMAIL = 'sadipur92@gmail.com';
 
   const handleCopy = (text, type, label) => {
